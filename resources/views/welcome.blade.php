@@ -303,18 +303,18 @@
                     <div class="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                         <div class="rounded-2xl border border-white/10 bg-zinc-900/70 p-6">
                             <p class="text-xs uppercase tracking-[0.3em] text-zinc-500">Location</p>
-                            <p class="mt-3 text-lg text-white">123 Ember Street</p>
-                            <p class="text-zinc-400">Downtown, PH 1000</p>
+                            <p class="mt-3 text-lg text-white">{{ $contact['location_line_1'] }}</p>
+                            <p class="text-zinc-400">{{ $contact['location_line_2'] }}</p>
                         </div>
                         <div class="rounded-2xl border border-white/10 bg-zinc-900/70 p-6">
                             <p class="text-xs uppercase tracking-[0.3em] text-zinc-500">Hours</p>
-                            <p class="mt-3 text-lg text-white">Mon - Sat: 10 AM - 8 PM</p>
-                            <p class="text-zinc-400">Sun: 12 PM - 6 PM</p>
+                            <p class="mt-3 text-lg text-white">{{ $contact['hours_line_1'] }}</p>
+                            <p class="text-zinc-400">{{ $contact['hours_line_2'] }}</p>
                         </div>
                         <div class="rounded-2xl border border-white/10 bg-zinc-900/70 p-6">
                             <p class="text-xs uppercase tracking-[0.3em] text-zinc-500">Get in Touch</p>
-                            <p class="mt-3 text-lg text-white">+63 900 000 0000</p>
-                            <p class="text-zinc-400">hello@blackember.com</p>
+                            <p class="mt-3 text-lg text-white">{{ $contact['phone'] }}</p>
+                            <p class="text-zinc-400">{{ $contact['email'] }}</p>
                         </div>
                     </div>
                 </div>

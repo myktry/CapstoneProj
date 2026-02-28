@@ -1,13 +1,26 @@
 <?php
 
 use App\Http\Controllers\CheckoutController;
+use App\Models\ContactSetting;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (auth()->check() && auth()->user()->role === 'admin') {
         return redirect('/admin');
     }
-    return view('welcome');
+
+	$contact = ContactSetting::query()->first();
+
+	return view('welcome', [
+		'contact' => [
+			'location_line_1' => $contact?->location_line_1 ?? '123 Ember Street',
+			'location_line_2' => $contact?->location_line_2 ?? 'Downtown, PH 1000',
+			'hours_line_1' => $contact?->hours_line_1 ?? 'Mon - Sat: 10 AM - 8 PM',
+			'hours_line_2' => $contact?->hours_line_2 ?? 'Sun: 12 PM - 6 PM',
+			'phone' => $contact?->phone ?? '+63 900 000 0000',
+			'email' => $contact?->email ?? 'hello@blackember.com',
+		],
+	]);
 })->name('home');
 
 // Checkout (Stripe)
