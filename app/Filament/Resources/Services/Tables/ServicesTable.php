@@ -6,7 +6,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
@@ -17,9 +16,6 @@ class ServicesTable
     {
         return $table
             ->columns([
-                ImageColumn::make('image')
-                    ->square()
-                    ->defaultImageUrl('https://placehold.co/100x100?text=Service'),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),

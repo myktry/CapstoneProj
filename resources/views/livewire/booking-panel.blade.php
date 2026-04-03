@@ -48,7 +48,7 @@
                         <div>
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Service *</label>
                             <select
-                                wire:model.live="selectedServiceId"
+                                wire:model.change="selectedServiceId"
                                 class="w-full rounded-lg border border-amber-500/20 bg-zinc-900 px-4 py-3 text-white focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all duration-200"
                             >
                                 <option value="">Choose a service</option>
@@ -94,7 +94,7 @@
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Full Name *</label>
                             <input
                                 type="text"
-                                wire:model.live="form.name"
+                                wire:model.blur="form.name"
                                 placeholder="John Doe"
                                 class="w-full rounded-lg border border-amber-500/20 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all duration-200"
                             />
@@ -104,7 +104,7 @@
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Email Address *</label>
                             <input
                                 type="email"
-                                wire:model.live="form.email"
+                                wire:model.blur="form.email"
                                 placeholder="john@example.com"
                                 class="w-full rounded-lg border border-amber-500/20 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all duration-200"
                             />
@@ -114,7 +114,7 @@
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Phone Number *</label>
                             <input
                                 type="tel"
-                                wire:model.live="form.phone"
+                                wire:model.blur="form.phone"
                                 placeholder="(555) 123-4567"
                                 class="w-full rounded-lg border border-amber-500/20 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all duration-200"
                             />

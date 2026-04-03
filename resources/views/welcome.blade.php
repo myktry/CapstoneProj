@@ -16,7 +16,9 @@
     <body class="bg-zinc-950 text-zinc-100 antialiased">
         @php
             $styles = \App\Models\GalleryItem::query()
-                ->active()
+                ->select(['id', 'name', 'image', 'description'])
+                ->featuredOnHome()
+                ->limit(6)
                 ->get()
                 ->map(fn ($item) => [
                     'name' => $item->name,
@@ -24,7 +26,6 @@
                         ? (str_starts_with($item->image, 'http') ? $item->image : \Illuminate\Support\Facades\Storage::disk('public')->url($item->image))
                         : 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
                     'description' => $item->description ?: 'Premium grooming style showcase.',
-                    'time' => 'Gallery',
                 ])->values();
         @endphp
 
@@ -39,7 +40,7 @@
                     </div>
                     <nav class="flex items-center gap-8 text-sm uppercase tracking-widest text-zinc-400">
                         <a href="#home" class="transition hover:text-white">Home</a>
-                        <a href="#gallery" class="transition hover:text-white">Gallery</a>
+                        <a href="{{ route('gallery') }}" class="transition hover:text-white">Gallery</a>
                         <a href="#book" class="transition hover:text-white">Book Now</a>
                         <a href="#contact" class="transition hover:text-white">Contact</a>
 
@@ -50,9 +51,7 @@
                                     ->latest()
                                     ->take(5)
                                     ->get();
-                                $newCount = auth()->user()->appointments()
-                                    ->where('created_at', '>=', now()->subDay())
-                                    ->count();
+                                $newCount = $recentBookings->filter(fn ($b) => $b->created_at >= now()->subDay())->count();
                             @endphp
 
                             {{-- Notification Bell --}}
@@ -178,19 +177,83 @@
                             <p class="text-xs uppercase tracking-[0.4em] text-amber-300">Gallery</p>
                             <h3 class="mt-3 text-3xl font-semibold text-white">Featured styles</h3>
                         </div>
-                        <p class="max-w-xl text-zinc-400">
-                            A lookbook of sharp cuts, textured tops, and tailored beards.
-                        </p>
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                            <p class="max-w-xl text-zinc-400">
+                                A lookbook of sharp cuts, textured tops, and tailored beards.
+                            </p>
+                            <a href="{{ route('gallery') }}" class="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-400/40 text-amber-400 hover:border-amber-300 hover:text-amber-300 transition text-sm font-semibold uppercase tracking-widest">
+                                View All
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        </div>
                     </div>
 
                     <div x-data="{
                             page: 0,
                             perPage: 3,
                             items: {{ Js::from($styles) }},
+                            syncUrl: '{{ route('home.featured-styles') }}',
+                            poller: null,
+                            channel: null,
+                            lastSignature: '',
                             sliding: false,
                             direction: 'next',
                             get totalPages() { return Math.ceil(this.items.length / this.perPage); },
                             get currentItems() { return this.items.slice(this.page * this.perPage, (this.page + 1) * this.perPage); },
+                            init() {
+                                this.lastSignature = JSON.stringify(this.items);
+
+                                if ('BroadcastChannel' in window) {
+                                    this.channel = new BroadcastChannel('gallery-featured-sync');
+
+                                    this.channel.onmessage = (event) => {
+                                        if (event?.data?.type !== 'gallery-featured-updated') {
+                                            return;
+                                        }
+
+                                        this.syncFeaturedStyles();
+                                    };
+                                }
+
+                                this.poller = setInterval(() => this.syncFeaturedStyles(), 3000);
+                            },
+                            async syncFeaturedStyles() {
+                                try {
+                                    const response = await fetch(this.syncUrl, {
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                        },
+                                    });
+
+                                    if (!response.ok) {
+                                        return;
+                                    }
+
+                                    const payload = await response.json();
+                                    const incomingItems = Array.isArray(payload.items) ? payload.items : [];
+                                    const nextSignature = JSON.stringify(incomingItems);
+
+                                    if (nextSignature === this.lastSignature) {
+                                        return;
+                                    }
+
+                                    this.items = incomingItems;
+                                    this.lastSignature = nextSignature;
+
+                                    if (this.totalPages === 0) {
+                                        this.page = 0;
+                                        return;
+                                    }
+
+                                    if (this.page > this.totalPages - 1) {
+                                        this.page = this.totalPages - 1;
+                                    }
+                                } catch (error) {
+                                    // Keep the carousel usable if polling fails temporarily.
+                                }
+                            },
                             go(dir) {
                                 if (this.sliding) return;
                                 this.direction = dir;

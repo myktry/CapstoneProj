@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Services\Schemas;
 
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -31,9 +30,6 @@ class ServiceForm
                     ->required()
                     ->numeric()
                     ->default(0),
-                FileUpload::make('image')
-                    ->directory('services')
-                    ->image(),
                 Textarea::make('description')
                     ->rows(4)
                     ->columnSpanFull(),

@@ -21,6 +21,11 @@ class BookingPanel extends Component
 
     protected $listeners = ['open-booking' => 'openPanel', 'select-date' => 'handleDateSelected'];
 
+    public function mount(): void
+    {
+        $this->prefillContactForm();
+    }
+
     #[Computed]
     public function isFormComplete()
     {
@@ -62,6 +67,7 @@ class BookingPanel extends Component
 
     public function openPanel()
     {
+        $this->prefillContactForm();
         $this->isOpen = true;
     }
 
@@ -127,6 +133,21 @@ class BookingPanel extends Component
             'email' => '',
             'phone' => '',
         ];
+
+        $this->prefillContactForm();
+    }
+
+    private function prefillContactForm(): void
+    {
+        if (! auth()->check()) {
+            return;
+        }
+
+        $user = auth()->user();
+
+        $this->form['name'] = $user->name ?? '';
+        $this->form['email'] = $user->email ?? '';
+        $this->form['phone'] = $user->phone ?? '';
     }
 
     public function render()

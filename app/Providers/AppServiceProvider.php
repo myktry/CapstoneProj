@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Observers\ModelActivityObserver;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Support\ServiceProvider;
+use App\Observers\GalleryItemServiceObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
 
         Service::observe($observer);
         GalleryItem::observe($observer);
+        GalleryItem::observe(GalleryItemServiceObserver::class);
         Appointment::observe($observer);
         ClosedDate::observe($observer);
     }

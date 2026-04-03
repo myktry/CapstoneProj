@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Service extends Model
 {
     protected $fillable = [
+        'gallery_item_id',
         'name',
         'price',
         'description',
@@ -25,6 +27,11 @@ class Service extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function galleryItem(): BelongsTo
+    {
+        return $this->belongsTo(GalleryItem::class);
     }
 
     public function scopeActive(Builder $query): Builder

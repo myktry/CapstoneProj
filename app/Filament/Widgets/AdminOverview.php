@@ -13,6 +13,10 @@ class AdminOverview extends StatsOverviewWidget
 {
     protected ?string $heading = 'Business Overview';
 
+    protected static bool $isLazy = true;
+
+    protected ?string $placeholderHeight = '120px';
+
     protected static ?int $sort = 1;
 
     protected function getStats(): array

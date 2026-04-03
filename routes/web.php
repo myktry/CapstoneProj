@@ -2,14 +2,21 @@
 
 use App\Http\Controllers\CheckoutController;
 use App\Models\ContactSetting;
+use App\Models\GalleryItem;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 Route::get('/', function () {
     if (auth()->check() && auth()->user()->role === 'admin') {
         return redirect('/admin');
     }
 
-	$contact = ContactSetting::query()->first();
+	$contact = null;
+
+	if (Schema::hasTable('contact_settings')) {
+		$contact = ContactSetting::query()->first();
+	}
 
 	return view('welcome', [
 		'contact' => [
@@ -22,6 +29,33 @@ Route::get('/', function () {
 		],
 	]);
 })->name('home');
+
+Route::get('/gallery', function () {
+	if (auth()->check() && auth()->user()->role === 'admin') {
+		return redirect('/admin');
+	}
+
+	return view('gallery');
+})->name('gallery');
+
+Route::get('/featured-styles', function () {
+	$items = GalleryItem::query()
+		->select(['id', 'name', 'image', 'description'])
+		->featuredOnHome()
+		->limit(6)
+		->get()
+		->map(fn ($item) => [
+			'name' => $item->name,
+			'image' => $item->image
+				? (str_starts_with($item->image, 'http') ? $item->image : Storage::disk('public')->url($item->image))
+				: 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
+			'description' => $item->description ?: 'Premium grooming style showcase.',
+		])->values();
+
+	return response()->json([
+		'items' => $items,
+	]);
+})->name('home.featured-styles');
 
 // Checkout (Stripe)
 Route::middleware('auth')->get('/checkout/create', [CheckoutController::class, 'create'])->name('checkout.create');

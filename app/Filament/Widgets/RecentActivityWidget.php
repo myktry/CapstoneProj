@@ -11,6 +11,10 @@ class RecentActivityWidget extends TableWidget
 {
     protected static ?string $heading = 'Recent Activity';
 
+    protected static bool $isLazy = true;
+
+    protected ?string $placeholderHeight = '420px';
+
     protected int|string|array $columnSpan = 'full';
 
     protected static ?int $sort = 2;

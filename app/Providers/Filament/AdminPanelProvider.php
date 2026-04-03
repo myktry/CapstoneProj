@@ -53,6 +53,23 @@ class AdminPanelProvider extends PanelProvider
                             }
                         }
                     </style>
+
+                    <script>
+                        document.addEventListener('livewire:init', () => {
+                            if (!('BroadcastChannel' in window) || typeof window.Livewire === 'undefined') {
+                                return;
+                            }
+
+                            const channel = new BroadcastChannel('gallery-featured-sync');
+
+                            window.Livewire.on('gallery-featured-updated', () => {
+                                channel.postMessage({
+                                    type: 'gallery-featured-updated',
+                                    timestamp: Date.now(),
+                                });
+                            });
+                        });
+                    </script>
                 HTML),
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

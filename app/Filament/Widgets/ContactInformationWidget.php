@@ -16,6 +16,10 @@ class ContactInformationWidget extends Widget implements HasForms
 
     protected string $view = 'filament.widgets.contact-information-widget';
 
+    protected static bool $isLazy = true;
+
+    protected ?string $placeholderHeight = '360px';
+
     protected int|string|array $columnSpan = 'full';
 
     protected static ?int $sort = 3;
@@ -24,7 +28,13 @@ class ContactInformationWidget extends Widget implements HasForms
 
     public function mount(): void
     {
-        $contact = ContactSetting::query()->firstOrCreate([], $this->defaultContactData());
+        $contact = ContactSetting::query()->first();
+
+        if (! $contact) {
+            $this->form->fill($this->defaultContactData());
+
+            return;
+        }
 
         $this->form->fill([
             'location_line_1' => $contact->location_line_1,
