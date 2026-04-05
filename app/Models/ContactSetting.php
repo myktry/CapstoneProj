@@ -13,5 +13,15 @@ class ContactSetting extends Model
         'hours_line_2',
         'phone',
         'email',
+        'booking_start_time',
+        'booking_end_time',
+        'booking_interval_minutes',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'booking_interval_minutes' => 'integer',
+        ];
+    }
 }

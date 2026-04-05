@@ -14,16 +14,21 @@ class ModelActivityObserver
 
     public function updated(Model $model): void
     {
-        $dirty = $model->getDirty();
-        // ignore trivial timestamp-only updates
-        unset($dirty['updated_at']);
-        if (empty($dirty)) return;
+        // In the `updated` event, changed values are available via getChanges().
+        $changed = $model->getChanges();
+        unset($changed['updated_at']);
 
+        if (empty($changed)) {
+            return;
+        }
+
+        $original = $model->getOriginal();
         $changes = [];
-        foreach ($dirty as $field => $newValue) {
+
+        foreach ($changed as $field => $newValue) {
             $changes[$field] = [
-                'from' => $model->getOriginal($field),
-                'to'   => $newValue,
+                'from' => $original[$field] ?? null,
+                'to' => $newValue,
             ];
         }
 
@@ -38,7 +43,7 @@ class ModelActivityObserver
     private function log(string $action, Model $model, array $changes = []): void
     {
         $label  = $this->getLabel($model);
-        $name   = class_basename($model);
+        $name   = str(class_basename($model))->snake(' ')->title();
 
         ActivityLog::create([
             'user_id'    => auth()->id(),
@@ -54,6 +59,8 @@ class ModelActivityObserver
     {
         return $model->name
             ?? $model->customer_name
+            ?? $model->email
+            ?? $model->phone
             ?? (isset($model->date) ? (string) $model->date : null)
             ?? "#{$model->getKey()}";
     }

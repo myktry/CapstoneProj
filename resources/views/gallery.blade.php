@@ -208,9 +208,9 @@
                                     </div>
 
                                     {{-- Content Container --}}
-                                    <div class="flex flex-col flex-1 p-5 min-h-[140px]">
+                                    <div class="flex flex-col flex-1 p-5 min-h-[140px] text-center">
                                         {{-- Title --}}
-                                        <div class="flex items-start justify-between gap-3 mb-2">
+                                        <div class="mb-2 flex items-start justify-center gap-3">
                                             <h4 class="font-semibold text-white leading-snug text-lg">
                                                 {{ $style['name'] }}
                                             </h4>
@@ -221,24 +221,24 @@
                                         </p>
 
                                         {{-- Description --}}
-                                        <p class="text-sm text-zinc-400 line-clamp-2 mb-4">
+                                        <p class="mb-4 line-clamp-2 text-sm text-zinc-400">
                                             {{ $style['description'] }}
                                         </p>
 
                                         {{-- Action Buttons --}}
-                                        <div class="flex items-center gap-3 mt-auto">
+                                        <div class="mt-auto flex items-center justify-center gap-3">
                                             @auth
                                                 <button
                                                     type="button"
-                                                    onclick="window.Livewire.dispatch('open-booking', { service: '{{ $style['name'] }}' })"
-                                                    class="flex-1 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-zinc-900 transition hover:bg-amber-400 focus:bg-amber-400 active:scale-95"
+                                                    onclick="window.Livewire.dispatch('open-booking', { service: @js($style['name']) })"
+                                                    class="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-center text-sm font-semibold uppercase tracking-wider text-zinc-900 transition hover:bg-amber-400 focus:bg-amber-400 active:scale-95"
                                                 >
                                                     Book This Style
                                                 </button>
                                             @else
                                                 <a
-                                                    href="{{ route('book.appointment') }}"
-                                                    class="flex-1 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-zinc-900 transition hover:bg-amber-400 focus:bg-amber-400 active:scale-95 text-center"
+                                                    href="{{ route('book.appointment', ['service' => $style['name']]) }}"
+                                                    class="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-center text-sm font-semibold uppercase tracking-wider text-zinc-900 transition hover:bg-amber-400 focus:bg-amber-400 active:scale-95"
                                                 >
                                                     Book This Style
                                                 </a>

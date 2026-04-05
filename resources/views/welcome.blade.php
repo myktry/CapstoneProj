@@ -393,7 +393,9 @@
         @if (request()->boolean('booking'))
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
-                    window.Livewire.dispatch('open-booking');
+                    window.Livewire.dispatch('open-booking', {
+                        serviceId: @js(request()->query('service')),
+                    });
                 });
             </script>
         @endif

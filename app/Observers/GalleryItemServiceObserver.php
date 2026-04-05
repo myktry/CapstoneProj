@@ -21,6 +21,8 @@ class GalleryItemServiceObserver
     {
         Service::query()
             ->where('gallery_item_id', $galleryItem->id)
+            ->get()
+            ->each
             ->delete();
     }
 

@@ -17,6 +17,14 @@ class CompletedAppointmentsHistoryWidget extends TableWidget
 
     protected ?string $placeholderHeight = '260px';
 
+    public static function canView(): bool
+    {
+        $routeName = request()->route()?->getName();
+
+        return is_string($routeName)
+            && str_contains($routeName, 'filament.admin.resources.appointments.');
+    }
+
     public function table(Table $table): Table
     {
         return $table

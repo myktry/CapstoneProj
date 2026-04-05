@@ -66,20 +66,23 @@
                 @if ($selectedDate && $selectedServiceId)
                     <div class="transition-all duration-300">
                         <p class="mb-4 text-xs uppercase tracking-widest text-amber-400/70">Step 3: Select Time</p>
-                        <div class="grid grid-cols-3 gap-3">
-                            @php
-                                $times = ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
-                            @endphp
-                            @foreach ($times as $time)
-                                <button
-                                    type="button"
-                                    wire:click="selectTime('{{ $time }}')"
-                                    class="rounded-xl border-2 px-3 py-3 text-sm font-bold transition duration-200 {{ $selectedTime === $time ? 'border-amber-400 bg-amber-500/20 text-amber-300 shadow-lg shadow-amber-500/30' : 'border-white/10 text-zinc-400 hover:border-amber-500/30 hover:text-zinc-300 hover:bg-zinc-800' }}"
-                                >
-                                    {{ $time }}
-                                </button>
-                            @endforeach
-                        </div>
+                        @if (! empty($this->timeSlots))
+                            <div class="grid grid-cols-3 gap-3">
+                                @foreach ($this->timeSlots as $time)
+                                    <button
+                                        type="button"
+                                        wire:click="selectTime('{{ $time }}')"
+                                        class="rounded-xl border-2 px-3 py-3 text-sm font-bold transition duration-200 {{ $selectedTime === $time ? 'border-amber-400 bg-amber-500/20 text-amber-300 shadow-lg shadow-amber-500/30' : 'border-white/10 text-zinc-400 hover:border-amber-500/30 hover:text-zinc-300 hover:bg-zinc-800' }}"
+                                    >
+                                        {{ $time }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
+                                <p class="text-sm text-zinc-400">No booking time slots are configured yet. Please contact the admin.</p>
+                            </div>
+                        @endif
                     </div>
                 @endif
 

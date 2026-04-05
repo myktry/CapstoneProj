@@ -55,12 +55,17 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Appointment::class);
     }
 
+    public function isAdmin(): bool
+    {
+        return strtolower(trim((string) $this->role)) === 'admin';
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() !== 'admin') {
             return true;
         }
 
-        return $this->role === 'admin';
+        return $this->isAdmin();
     }
 }

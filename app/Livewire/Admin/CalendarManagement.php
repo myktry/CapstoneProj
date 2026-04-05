@@ -71,7 +71,11 @@ class CalendarManagement extends Component
         $normalizedDate = Carbon::parse($this->selectedDate)->toDateString();
 
         if ($this->selectedStatus === 'open') {
-            ClosedDate::query()->whereDate('date', $normalizedDate)->delete();
+            ClosedDate::query()
+                ->whereDate('date', $normalizedDate)
+                ->get()
+                ->each
+                ->delete();
         } else {
             $existingRecord = ClosedDate::query()
                 ->whereDate('date', $normalizedDate)

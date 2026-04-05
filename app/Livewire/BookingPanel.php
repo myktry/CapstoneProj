@@ -2,8 +2,11 @@
 
 namespace App\Livewire;
 
+use App\Models\ContactSetting;
 use App\Models\Service;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 
@@ -24,6 +27,8 @@ class BookingPanel extends Component
     public function mount(): void
     {
         $this->prefillContactForm();
+
+        $this->applySelectedService(request()->query('service'));
     }
 
     #[Computed]
@@ -56,6 +61,37 @@ class BookingPanel extends Component
         return $this->activeServices->firstWhere('id', $this->selectedServiceId);
     }
 
+    #[Computed]
+    public function timeSlots(): array
+    {
+        if (! Schema::hasColumns('contact_settings', ['booking_start_time', 'booking_end_time', 'booking_interval_minutes'])) {
+            return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+        }
+
+        $contact = ContactSetting::query()->first(['booking_start_time', 'booking_end_time', 'booking_interval_minutes']);
+
+        $startTime = $contact?->booking_start_time ?: '10:00:00';
+        $endTime = $contact?->booking_end_time ?: '17:00:00';
+        $intervalMinutes = max(15, (int) ($contact?->booking_interval_minutes ?: 60));
+
+        $start = Carbon::createFromTimeString($startTime);
+        $end = Carbon::createFromTimeString($endTime);
+
+        if ($end->lessThan($start)) {
+            return [];
+        }
+
+        $slots = [];
+        $current = $start->copy();
+
+        while ($current->lessThanOrEqualTo($end)) {
+            $slots[] = $current->format('g:i A');
+            $current->addMinutes($intervalMinutes);
+        }
+
+        return $slots;
+    }
+
     public function getFormStatus()
     {
         return [
@@ -65,9 +101,18 @@ class BookingPanel extends Component
         ];
     }
 
-    public function openPanel()
+    public function openPanel(mixed $service = null, mixed $serviceId = null): void
     {
         $this->prefillContactForm();
+
+        $selectedService = $serviceId ?? $service;
+
+        if (is_array($service)) {
+            $selectedService = $service['serviceId'] ?? $service['service'] ?? $selectedService;
+        }
+
+        $this->applySelectedService(is_int($selectedService) || is_string($selectedService) ? $selectedService : null);
+
         $this->isOpen = true;
     }
 
@@ -148,6 +193,38 @@ class BookingPanel extends Component
         $this->form['name'] = $user->name ?? '';
         $this->form['email'] = $user->email ?? '';
         $this->form['phone'] = $user->phone ?? '';
+    }
+
+    private function applySelectedService(int|string|null $serviceInput): void
+    {
+        if (blank($serviceInput)) {
+            return;
+        }
+
+        $matchedService = null;
+
+        if (is_numeric($serviceInput)) {
+            $serviceId = (int) $serviceInput;
+            $matchedService = $this->activeServices->first(fn ($service) => (int) $service->id === $serviceId);
+        }
+
+        if (! $matchedService && is_string($serviceInput)) {
+            $needle = strtolower(trim($serviceInput));
+            $matchedService = $this->activeServices->first(
+                fn ($service) => strtolower(trim((string) $service->name)) === $needle
+            );
+        }
+
+        if (! $matchedService) {
+            return;
+        }
+
+        $serviceId = (int) $matchedService->id;
+
+        if ($this->selectedServiceId !== $serviceId) {
+            $this->selectedServiceId = $serviceId;
+            $this->selectedTime = null;
+        }
     }
 
     public function render()

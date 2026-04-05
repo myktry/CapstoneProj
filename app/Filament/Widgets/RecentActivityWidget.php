@@ -23,7 +23,7 @@ class RecentActivityWidget extends TableWidget
     {
         return $table
             ->query(
-                ActivityLog::query()->latest()->limit(15)
+                ActivityLog::query()->latest()
             )
             ->columns([
                 TextColumn::make('action')
@@ -42,6 +42,7 @@ class RecentActivityWidget extends TableWidget
                     ->dateTime('M j, Y g:i A')
                     ->sortable(),
             ])
-            ->paginated(false);
+            ->defaultPaginationPageOption(10)
+            ->paginated([10, 25, 50]);
     }
 }

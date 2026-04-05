@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\Admin\ReceiptDecryptionController;
 use App\Models\ContactSetting;
 use App\Models\GalleryItem;
 use Illuminate\Support\Facades\Route;
@@ -8,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 
 Route::get('/', function () {
-    if (auth()->check() && auth()->user()->role === 'admin') {
+	if (auth()->check() && auth()->user()?->isAdmin()) {
         return redirect('/admin');
     }
 
@@ -31,7 +32,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/gallery', function () {
-	if (auth()->check() && auth()->user()->role === 'admin') {
+	if (auth()->check() && auth()->user()?->isAdmin()) {
 		return redirect('/admin');
 	}
 
@@ -64,16 +65,19 @@ Route::get('/booking/cancel',  [CheckoutController::class, 'cancel'])->name('boo
 
 
 Route::get('/book-appointment', function () {
-	if (auth()->user()?->role === 'admin') {
+	if (auth()->user()?->isAdmin()) {
 		return redirect('/admin');
 	}
 
-	return redirect()->route('home', ['booking' => 1]);
+	return redirect()->route('home', [
+		'booking' => 1,
+		'service' => request()->query('service'),
+	]);
 })->middleware('auth')->name('book.appointment');
 
 Route::middleware('auth')->group(function () {
 	Route::get('/dashboard', function () {
-		if (auth()->user()?->role === 'admin') {
+		if (auth()->user()?->isAdmin()) {
 			return redirect('/admin');
 		}
 
@@ -89,6 +93,10 @@ Route::middleware('auth')->group(function () {
 
 		return redirect()->route('home');
 	})->name('logout');
+
+	Route::post('/admin/security/receipts/decrypt', [ReceiptDecryptionController::class, 'decrypt'])
+		->middleware('throttle:receipt-decrypt')
+		->name('admin.security.receipts.decrypt');
 });
 
 require __DIR__.'/auth.php';

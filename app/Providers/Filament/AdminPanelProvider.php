@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\AdminOverview;
+use App\Filament\Widgets\BookingScheduleWidget;
 use App\Filament\Widgets\ContactInformationWidget;
 use App\Filament\Widgets\RecentActivityWidget;
 use Filament\Http\Middleware\Authenticate;
@@ -82,6 +83,7 @@ class AdminPanelProvider extends PanelProvider
                 AdminOverview::class,
                 RecentActivityWidget::class,
                 ContactInformationWidget::class,
+                BookingScheduleWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -18,7 +18,7 @@ class ContactInformationWidget extends Widget implements HasForms
 
     protected static bool $isLazy = true;
 
-    protected ?string $placeholderHeight = '360px';
+    protected ?string $placeholderHeight = '300px';
 
     protected int|string|array $columnSpan = 'full';
 
