@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ReceiptRecord;
 use App\Models\SecurityAuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class ReceiptDecryptionController extends Controller
 {
@@ -17,7 +17,7 @@ class ReceiptDecryptionController extends Controller
 
         $payload = $request->validate([
             'transaction_id' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9_-]+$/'],
-            'receipt_file' => ['required', 'string', 'max:160', 'regex:/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i'],
+            'receipt_file' => ['nullable', 'string', 'max:160', 'regex:/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i'],
         ]);
 
         $adminId = $request->user()?->id;
@@ -33,28 +33,63 @@ class ReceiptDecryptionController extends Controller
             message: 'Receipt decryption function called.'
         );
 
-        $file = $payload['receipt_file'];
+        $record = ReceiptRecord::query()
+            ->where('transaction_id', $transactionId)
+            ->where('is_active', true)
+            ->first();
 
-        if (! Str::startsWith($file, $transactionId)) {
-            return $this->fail($adminId, $ip, $transactionId, 'Receipt filename must start with transaction ID.');
+        if (! $record) {
+            return $this->fail($adminId, $ip, $transactionId, 'No active receipt record found for transaction.');
+        }
+
+        if (filled($payload['receipt_file'] ?? null) && $payload['receipt_file'] !== $record->filename) {
+            return $this->fail($adminId, $ip, $transactionId, 'Provided receipt filename does not match the bound receipt record.');
         }
 
         $baseDir = storage_path('app/receipts');
+        if (! is_dir($baseDir)) {
+            @mkdir($baseDir, 0750, true);
+        }
+
         $baseDirReal = realpath($baseDir);
 
         if ($baseDirReal === false) {
             return $this->fail($adminId, $ip, $transactionId, 'Receipts directory is not available.');
         }
 
-        $targetPath = $baseDirReal . DIRECTORY_SEPARATOR . basename($file);
+        if (str_starts_with($baseDirReal, public_path())) {
+            return $this->fail($adminId, $ip, $transactionId, 'Receipts directory must not be web-accessible.');
+        }
+
+        if (is_link($baseDirReal)) {
+            return $this->fail($adminId, $ip, $transactionId, 'Receipts directory symlink is not allowed.');
+        }
+
+        $targetPath = storage_path('app/' . ltrim($record->relative_path, '/\\'));
         $resolvedPath = realpath($targetPath);
 
         if ($resolvedPath === false || ! str_starts_with($resolvedPath, $baseDirReal . DIRECTORY_SEPARATOR)) {
             return $this->fail($adminId, $ip, $transactionId, 'Path traversal attempt or invalid receipt path detected.');
         }
 
+        if (basename($resolvedPath) !== $record->filename) {
+            return $this->fail($adminId, $ip, $transactionId, 'Receipt filename mismatch with receipt record binding.');
+        }
+
         if (! is_file($resolvedPath) || ! is_readable($resolvedPath)) {
             return $this->fail($adminId, $ip, $transactionId, 'Receipt file does not exist or is not readable.');
+        }
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $dirPerms = fileperms($baseDirReal);
+            $filePerms = fileperms($resolvedPath);
+
+            if (($dirPerms !== false && ($dirPerms & 0x0002) === 0x0002) || ($filePerms !== false && ($filePerms & 0x0002) === 0x0002)) {
+                return $this->fail($adminId, $ip, $transactionId, 'Receipt directory/file permissions are too permissive.');
+            }
+
+            @chmod($baseDirReal, 0750);
+            @chmod($resolvedPath, 0640);
         }
 
         $mime = mime_content_type($resolvedPath) ?: '';
@@ -64,18 +99,23 @@ class ReceiptDecryptionController extends Controller
             return $this->fail($adminId, $ip, $transactionId, 'Invalid or unsupported image format.');
         }
 
-        $checksumPath = $resolvedPath . '.sha256';
-
-        if (! is_file($checksumPath) || ! is_readable($checksumPath)) {
-            return $this->fail($adminId, $ip, $transactionId, 'Missing checksum file for integrity verification.');
+        if ($record->mime_type !== $mime) {
+            return $this->fail($adminId, $ip, $transactionId, 'MIME type does not match receipt record.');
         }
 
-        $expectedChecksum = trim((string) file_get_contents($checksumPath));
-        $expectedChecksum = strtolower(substr($expectedChecksum, 0, 64));
+        if (! preg_match('/^[a-f0-9]{64}$/', (string) $record->sha256_hash)) {
+            return $this->fail($adminId, $ip, $transactionId, 'Receipt record hash is invalid.');
+        }
+
+        $expectedChecksum = strtolower($record->sha256_hash);
         $actualChecksum = hash_file('sha256', $resolvedPath);
 
-        if (! preg_match('/^[a-f0-9]{64}$/', $expectedChecksum) || ! hash_equals($expectedChecksum, $actualChecksum)) {
+        if (! hash_equals($expectedChecksum, $actualChecksum)) {
             return $this->fail($adminId, $ip, $transactionId, 'Integrity check failed: receipt appears tampered.');
+        }
+
+        if (filled($record->size_bytes) && (int) $record->size_bytes !== (int) filesize($resolvedPath)) {
+            return $this->fail($adminId, $ip, $transactionId, 'File size mismatch with receipt record.');
         }
 
         $this->audit(
@@ -86,7 +126,8 @@ class ReceiptDecryptionController extends Controller
             status: 'success',
             message: 'Receipt passed validation and integrity checks.',
             context: [
-                'receipt_file' => basename($resolvedPath),
+                'receipt_file' => $record->filename,
+                'relative_path' => $record->relative_path,
                 'mime_type' => $mime,
                 'sha256' => $actualChecksum,
             ]
@@ -96,7 +137,7 @@ class ReceiptDecryptionController extends Controller
             'ok' => true,
             'message' => 'Receipt validated and ready for secure processing.',
             'transaction_id' => $transactionId,
-            'receipt_file' => basename($resolvedPath),
+            'receipt_file' => $record->filename,
         ]);
     }
 

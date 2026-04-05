@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\ClosedDate;
 use App\Models\ContactSetting;
 use App\Models\GalleryItem;
+use App\Models\SecurityAuditLog;
 use App\Models\Service;
 use App\Observers\ModelActivityObserver;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
@@ -25,8 +26,37 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        RateLimiter::for('receipt-decrypt', function (Request $request): Limit {
-            return Limit::perMinute(3)->by($request->ip());
+        RateLimiter::for('receipt-decrypt', function (Request $request): array {
+            $ip = (string) $request->ip();
+            $adminId = (string) ($request->user()?->id ?? 'guest');
+
+            $throttleResponse = function (string $scope) use ($request, $ip): \Illuminate\Http\JsonResponse {
+                SecurityAuditLog::query()->create([
+                    'admin_id' => $request->user()?->id,
+                    'event' => 'security_alert',
+                    'status' => 'failed',
+                    'ip_address' => $ip,
+                    'transaction_id' => $request->input('transaction_id'),
+                    'message' => 'Receipt decrypt throttle exceeded by ' . $scope . '.',
+                    'context' => [
+                        'scope' => $scope,
+                    ],
+                ]);
+
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Too many decryption attempts. Please try again later.',
+                ], 429);
+            };
+
+            return [
+                Limit::perMinute(3)
+                    ->by('receipt-decrypt-ip:' . $ip)
+                    ->response(fn () => $throttleResponse('ip')),
+                Limit::perMinute(3)
+                    ->by('receipt-decrypt-admin:' . $adminId)
+                    ->response(fn () => $throttleResponse('admin')),
+            ];
         });
 
         $observer = ModelActivityObserver::class;
