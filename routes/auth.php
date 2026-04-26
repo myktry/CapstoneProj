@@ -8,8 +8,14 @@ Route::middleware('guest')->group(function () {
     Volt::route('register', 'pages.auth.register')
         ->name('register');
 
+    Volt::route('register/verify-otp', 'pages.auth.register-verify-otp')
+        ->name('register.verify-otp');
+
     Volt::route('login', 'pages.auth.login')
         ->name('login');
+
+    Volt::route('login/mfa-challenge', 'pages.auth.mfa-challenge')
+        ->name('login.mfa-challenge');
 
     Volt::route('forgot-password', 'pages.auth.forgot-password')
         ->name('password.request');

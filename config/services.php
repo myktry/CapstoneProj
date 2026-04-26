@@ -38,6 +38,16 @@ return [
     'stripe' => [
         'key'    => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'log'),
+        'from' => env('SMS_FROM', 'BLACKEMBER'),
+        'vonage_key' => env('SMS_VONAGE_KEY'),
+        'vonage_secret' => env('SMS_VONAGE_SECRET'),
+        'vonage_url' => env('SMS_VONAGE_URL', 'https://rest.nexmo.com/sms/json'),
+        'vonage_verify_ssl' => env('SMS_VONAGE_VERIFY_SSL', true),
     ],
 
 ];

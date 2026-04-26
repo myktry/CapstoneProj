@@ -146,8 +146,9 @@
                                 wire:click="submitBooking"
                                 class="w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-4 font-bold text-zinc-900 transition duration-200 hover:shadow-lg hover:shadow-amber-500/30 active:scale-95"
                             >
-                                Confirm Booking
+                                Continue to SMS Verification
                             </button>
+                            <p class="mt-2 text-center text-xs text-zinc-500">You will verify via SMS OTP before payment.</p>
                         @else
                             <div class="rounded-lg bg-zinc-800/50 border border-zinc-700 p-4 text-center">
                                 <p class="text-sm text-zinc-400">Fill in all fields to confirm</p>

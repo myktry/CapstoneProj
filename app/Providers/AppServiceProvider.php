@@ -10,6 +10,9 @@ use App\Models\GalleryItem;
 use App\Models\SecurityAuditLog;
 use App\Models\Service;
 use App\Observers\ModelActivityObserver;
+use App\Services\Sms\LogSmsSender;
+use App\Services\Sms\SmsSender;
+use App\Services\Sms\VonageSmsSender;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -22,6 +25,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
+        $this->app->bind(SmsSender::class, function () {
+            return match ((string) config('services.sms.driver', 'log')) {
+                'vonage' => new VonageSmsSender(),
+                default => new LogSmsSender(),
+            };
+        });
     }
 
     public function boot(): void

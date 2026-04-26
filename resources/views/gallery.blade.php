@@ -95,7 +95,8 @@
                                                 @php
                                                     $isNew = $booking->created_at >= now()->subDay();
                                                 @endphp
-                                                <li class="px-4 py-3 flex items-start gap-3 {{ $isNew ? 'bg-amber-500/5' : '' }}">
+                                                <li class="{{ $isNew ? 'bg-amber-500/5' : '' }}">
+                                                    <a href="{{ route('bookings.show', $booking) }}" class="flex items-start gap-3 px-4 py-3 transition hover:bg-white/5">
                                                     <div class="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full flex items-center justify-center
                                                         {{ $booking->status === 'paid' ? 'bg-emerald-500/10 text-emerald-400' : ($booking->status === 'cancelled' ? 'bg-red-500/10 text-red-400' : 'bg-zinc-800 text-zinc-400') }}">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -113,6 +114,8 @@
                                                             {{ optional($booking->service)->name ?? 'Service' }}
                                                         </p>
                                                         <p class="text-[11px] text-zinc-500 normal-case tracking-normal mt-0.5">
+                                                            {{ $booking->status === 'paid' ? 'Payment received' : ($booking->status === 'cancelled' ? 'Booking cancelled' : 'Booking update') }}
+                                                            &middot;
                                                             {{ \Carbon\Carbon::parse($booking->appointment_date)->format('M j, Y') }}
                                                             &middot; {{ \Carbon\Carbon::createFromTimeString($booking->appointment_time)->format('g:i A') }}
                                                         </p>
@@ -121,6 +124,7 @@
                                                         {{ $booking->status === 'paid' ? 'bg-emerald-500/10 text-emerald-400' : ($booking->status === 'cancelled' ? 'bg-red-500/10 text-red-400' : 'bg-zinc-700 text-zinc-400') }}">
                                                         {{ ucfirst($booking->status) }}
                                                     </span>
+                                                    </a>
                                                 </li>
                                             @endforeach
                                         </ul>

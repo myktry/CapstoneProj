@@ -96,12 +96,13 @@ class CheckoutController extends Controller
                 'customer_phone'   => $meta->customer_phone,
                 'status'           => 'paid',
                 'stripe_session_id'=> $sessionId,
+                'stripe_payment_intent_id' => (string) ($stripeSession->payment_intent ?? ''),
                 'amount_paid'      => $stripeSession->amount_total,
             ]);
         }
 
         // Clear pending booking from session
-        $request->session()->forget(['pending_booking', 'stripe_session_id']);
+        $request->session()->forget(['pending_booking', 'pending_booking_draft', 'stripe_session_id']);
 
         $appointment = $existing ?? Appointment::where('stripe_session_id', $sessionId)->first();
 
@@ -113,7 +114,7 @@ class CheckoutController extends Controller
      */
     public function cancel(Request $request)
     {
-        $request->session()->forget(['pending_booking', 'stripe_session_id']);
+        $request->session()->forget(['pending_booking', 'pending_booking_draft', 'stripe_session_id']);
 
         return view('booking.cancel');
     }

@@ -1,7 +1,6 @@
 <?php
 
 use App\Livewire\Forms\LoginForm;
-use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -16,15 +15,16 @@ new #[Layout('layouts.guest')] class extends Component
     {
         $this->validate();
 
-        $this->form->authenticate();
+        $user = $this->form->validateCredentials();
 
-        Session::regenerate();
+        session()->put('pending_login_mfa', [
+            'user_id' => (int) $user->id,
+            'remember' => (bool) $this->form->remember,
+        ]);
 
-        $defaultRedirect = auth()->user()?->role === 'admin'
-            ? '/admin'
-            : route('home', absolute: false);
+        session()->flash('status', 'mfa-required');
 
-        $this->redirectIntended(default: $defaultRedirect, navigate: false);
+        $this->redirect(route('login.mfa-challenge', absolute: false), navigate: false);
     }
 }; ?>
 
@@ -33,6 +33,12 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Welcome Back</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Sign in</h1>
     </div>
+
+    @if (session('status') === 'mfa-required')
+        <div class="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Please complete MFA verification to continue.
+        </div>
+    @endif
 
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -82,5 +88,6 @@ new #[Layout('layouts.guest')] class extends Component
             <x-primary-button class="ms-auto !rounded-full !bg-amber-400 !px-6 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300">
                 {{ __('Log in') }}
             </x-primary-button>
+        </div>
     </form>
 </div>

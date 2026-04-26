@@ -153,8 +153,7 @@ class BookingPanel extends Component
             return;
         }
 
-        // Store booking details in session so the checkout controller can use them
-        Session::put('pending_booking', [
+        Session::put('pending_booking_draft', [
             'user_id'          => auth()->id(),
             'service_id'       => $this->selectedServiceId,
             'appointment_date' => $this->selectedDate,
@@ -164,8 +163,7 @@ class BookingPanel extends Component
             'customer_phone'   => trim($this->form['phone']),
         ]);
 
-        // Redirect to Stripe Checkout (hard redirect — not SPA)
-        $this->redirect(route('checkout.create'), navigate: false);
+        $this->redirect(route('booking.verify-sms'), navigate: false);
     }
 
     private function resetForm()

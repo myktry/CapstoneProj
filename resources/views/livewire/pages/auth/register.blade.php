@@ -1,10 +1,9 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use App\Services\OtpService;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -19,7 +18,7 @@ new #[Layout('layouts.guest')] class extends Component
     /**
      * Handle an incoming registration request.
      */
-    public function register(): void
+    public function register(OtpService $otpService): void
     {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -28,14 +27,26 @@ new #[Layout('layouts.guest')] class extends Component
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
-        $validated['role'] = 'customer';
+        $pendingRegistration = [
+            'name' => trim($validated['name']),
+            'email' => strtolower(trim($validated['email'])),
+            'phone' => trim($validated['phone']),
+            'password' => Hash::make($validated['password']),
+            'role' => 'customer',
+        ];
 
-        event(new Registered($user = User::create($validated)));
+        session()->put('pending_registration', $pendingRegistration);
 
-        Auth::login($user);
+        $otpService->issueCode(
+            purpose: 'register',
+            channel: 'email',
+            recipient: $pendingRegistration['email'],
+            context: ['stage' => 'registration'],
+        );
 
-        $this->redirect(route('dashboard', absolute: false), navigate: false);
+        session()->flash('status', 'verification-code-sent');
+
+        $this->redirect(route('register.verify-otp', absolute: false), navigate: false);
     }
 }; ?>
 
@@ -95,6 +106,8 @@ new #[Layout('layouts.guest')] class extends Component
             <a class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300 focus:outline-none" href="{{ route('login') }}" wire:navigate>
                 {{ __('Already registered?') }}
             </a>
+
+            <x-input-error :messages="$errors->get('otp')" class="mt-2 text-right" />
 
             <x-primary-button class="!rounded-full !bg-amber-400 !px-6 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300">
                 {{ __('Register') }}

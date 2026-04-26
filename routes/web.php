@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\BookingRefundController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\ReceiptDecryptionController;
 use App\Models\ContactSetting;
 use App\Models\GalleryItem;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Volt\Volt;
 
 Route::get('/', function () {
 	if (auth()->check() && auth()->user()?->isAdmin()) {
@@ -60,8 +64,18 @@ Route::get('/featured-styles', function () {
 
 // Checkout (Stripe)
 Route::middleware('auth')->get('/checkout/create', [CheckoutController::class, 'create'])->name('checkout.create');
+Route::middleware('auth')->group(function () {
+	Volt::route('/booking/verify-sms', 'pages.booking.verify-sms')
+		->name('booking.verify-sms');
+});
 Route::get('/booking/success', [CheckoutController::class, 'success'])->name('booking.success');
 Route::get('/booking/cancel',  [CheckoutController::class, 'cancel'])->name('booking.cancel');
+Route::get('/webhooks/stripe', function () {
+	return response('Stripe webhook endpoint is active. Use POST requests from Stripe/Stripe CLI.', 200);
+});
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
+	->withoutMiddleware([VerifyCsrfToken::class])
+	->name('webhooks.stripe');
 
 
 Route::get('/book-appointment', function () {
@@ -76,6 +90,11 @@ Route::get('/book-appointment', function () {
 })->middleware('auth')->name('book.appointment');
 
 Route::middleware('auth')->group(function () {
+	Route::get('/my-bookings/{appointment}', [BookingRefundController::class, 'show'])
+		->name('bookings.show');
+	Route::post('/my-bookings/{appointment}/cancel', [BookingRefundController::class, 'cancel'])
+		->name('bookings.cancel');
+
 	Route::get('/dashboard', function () {
 		if (auth()->user()?->isAdmin()) {
 			return redirect('/admin');

@@ -26,6 +26,8 @@ class AppointmentsTable
                         'customer_phone',
                         'status',
                         'amount_paid',
+                        'refund_status',
+                        'cancelled_by',
                         'created_at',
                     ])
                     ->with(['service:id,name']);
@@ -58,6 +60,25 @@ class AppointmentsTable
                         default     => 'gray',
                     })
                     ->sortable(),
+                TextColumn::make('cancelled_by')
+                    ->label('Cancellation Tag')
+                    ->formatStateUsing(fn ($state, $record): string => $record->status === 'cancelled' && $state === 'user'
+                        ? 'User cancel booking'
+                        : ($record->status === 'cancelled' ? 'Cancelled' : 'N/A'))
+                    ->badge()
+                    ->color(fn ($state, $record): string => $record->status === 'cancelled' && $state === 'user'
+                        ? 'danger'
+                        : 'gray'),
+                TextColumn::make('refund_status')
+                    ->label('Refund')
+                    ->formatStateUsing(fn (?string $state): string => $state ? ucfirst($state) : 'N/A')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'processed' => 'success',
+                        'failed' => 'danger',
+                        'pending' => 'warning',
+                        default => 'gray',
+                    }),
                 TextColumn::make('amount_paid')
                     ->label('Amount')
                     ->formatStateUsing(fn ($state): string => '₱' . number_format($state / 100, 2))
