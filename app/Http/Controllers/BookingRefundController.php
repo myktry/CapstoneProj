@@ -178,7 +178,7 @@ class BookingRefundController extends Controller
         ]);
 
         if ($mappedStatus === 'processed' && ! $wasProcessed && $appointment->customer_email !== '') {
-            Mail::to($appointment->customer_email)->send(new RefundProcessedMail($appointment->fresh(['service'])));
+            Mail::to($appointment->customer_email)->queue(new RefundProcessedMail($appointment->fresh(['service'])));
         }
     }
 }

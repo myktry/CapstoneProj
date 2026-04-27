@@ -15,18 +15,20 @@
     </head>
     <body class="bg-zinc-950 text-zinc-100 antialiased">
         @php
-            $styles = \App\Models\GalleryItem::query()
-                ->select(['id', 'name', 'image', 'description'])
-                ->featuredOnHome()
-                ->limit(6)
-                ->get()
-                ->map(fn ($item) => [
-                    'name' => $item->name,
-                    'image' => $item->image
-                        ? (str_starts_with($item->image, 'http') ? $item->image : \Illuminate\Support\Facades\Storage::disk('public')->url($item->image))
-                        : 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
-                    'description' => $item->description ?: 'Premium grooming style showcase.',
-                ])->values();
+            $styles = \Illuminate\Support\Facades\Cache::remember('home.featured_styles', now()->addSeconds(60), function () {
+                return \App\Models\GalleryItem::query()
+                    ->select(['id', 'name', 'image', 'description'])
+                    ->featuredOnHome()
+                    ->limit(6)
+                    ->get()
+                    ->map(fn ($item) => [
+                        'name' => $item->name,
+                        'image' => $item->image
+                            ? (str_starts_with($item->image, 'http') ? $item->image : \Illuminate\Support\Facades\Storage::disk('public')->url($item->image))
+                            : 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
+                        'description' => $item->description ?: 'Premium grooming style showcase.',
+                    ])->values();
+            });
         @endphp
 
         <livewire:booking-panel />
@@ -254,7 +256,12 @@
                                     };
                                 }
 
-                                this.poller = setInterval(() => this.syncFeaturedStyles(), 3000);
+                                // Poll less frequently to reduce load while still keeping content fresh.
+                                this.poller = setInterval(() => {
+                                    if (document.visibilityState === 'visible') {
+                                        this.syncFeaturedStyles();
+                                    }
+                                }, 30000);
                             },
                             async syncFeaturedStyles() {
                                 try {

@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Mail\OtpCodeMail;
+use App\Jobs\DeliverOtpCode;
 use App\Models\OtpChallenge;
-use App\Services\Sms\SmsSender;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class OtpService
@@ -17,7 +15,7 @@ class OtpService
 
     private const OTP_COOLDOWN_SECONDS = 60;
 
-    public function __construct(private readonly SmsSender $smsSender)
+    public function __construct()
     {
     }
 
@@ -124,27 +122,19 @@ class OtpService
 
     private function deliverCode(string $channel, string $recipient, string $code, string $purpose): void
     {
-        $message = "Your Black Ember verification code is {$code}. It expires in ".self::OTP_EXPIRY_MINUTES." minutes.";
-
-        if ($channel === 'email') {
-            Mail::to($recipient)->send(new OtpCodeMail(
-                code: $code,
-                purpose: $purpose,
-                expiresInMinutes: self::OTP_EXPIRY_MINUTES,
-            ));
-
-            return;
+        if (! in_array($channel, ['email', 'sms'], true)) {
+            throw ValidationException::withMessages([
+                'otp' => 'Unsupported OTP channel selected.',
+            ]);
         }
 
-        if ($channel === 'sms') {
-            $this->smsSender->send($recipient, $message);
-
-            return;
-        }
-
-        throw ValidationException::withMessages([
-            'otp' => 'Unsupported OTP channel selected.',
-        ]);
+        DeliverOtpCode::dispatch(
+            channel: $channel,
+            recipient: $recipient,
+            code: $code,
+            purpose: $purpose,
+            expiresInMinutes: self::OTP_EXPIRY_MINUTES,
+        );
     }
 
     private function normalizeRecipient(string $channel, string $recipient): string

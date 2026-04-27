@@ -7,6 +7,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\ReceiptDecryptionController;
 use App\Models\ContactSetting;
 use App\Models\GalleryItem;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -45,18 +46,20 @@ Route::get('/gallery', function () {
 })->name('gallery');
 
 Route::get('/featured-styles', function () {
-	$items = GalleryItem::query()
-		->select(['id', 'name', 'image', 'description'])
-		->featuredOnHome()
-		->limit(6)
-		->get()
-		->map(fn ($item) => [
-			'name' => $item->name,
-			'image' => $item->image
-				? (str_starts_with($item->image, 'http') ? $item->image : Storage::disk('public')->url($item->image))
-				: 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
-			'description' => $item->description ?: 'Premium grooming style showcase.',
-		])->values();
+	$items = Cache::remember('home.featured_styles', now()->addSeconds(60), function () {
+		return GalleryItem::query()
+			->select(['id', 'name', 'image', 'description'])
+			->featuredOnHome()
+			->limit(6)
+			->get()
+			->map(fn ($item) => [
+				'name' => $item->name,
+				'image' => $item->image
+					? (str_starts_with($item->image, 'http') ? $item->image : Storage::disk('public')->url($item->image))
+					: 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
+				'description' => $item->description ?: 'Premium grooming style showcase.',
+			])->values();
+	});
 
 	return response()->json([
 		'items' => $items,

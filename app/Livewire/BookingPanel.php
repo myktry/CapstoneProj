@@ -6,7 +6,6 @@ use App\Models\ContactSetting;
 use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 
@@ -64,10 +63,6 @@ class BookingPanel extends Component
     #[Computed]
     public function timeSlots(): array
     {
-        if (! Schema::hasColumns('contact_settings', ['booking_start_time', 'booking_end_time', 'booking_interval_minutes'])) {
-            return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
-        }
-
         $contact = ContactSetting::query()->first(['booking_start_time', 'booking_end_time', 'booking_interval_minutes']);
 
         $startTime = $contact?->booking_start_time ?: '10:00:00';
