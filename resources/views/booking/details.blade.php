@@ -10,12 +10,12 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-zinc-950 text-zinc-100 antialiased">
-    <main class="mx-auto w-full max-w-3xl px-6 py-12">
+    <main class="mx-auto w-full max-w-3xl px-6 py-12" x-data="{ cancelModalOpen: false }" x-on:keydown.escape.window="cancelModalOpen = false">
         <a href="{{ route('home') }}" class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300">Back to home</a>
 
         <section class="mt-6 rounded-2xl border border-white/10 bg-zinc-900/80 p-6 shadow-2xl shadow-black/40">
             <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Payment Notification</p>
-            <h1 class="mt-2 text-2xl font-semibold text-white">Booking Reference #{{ $appointment->id }}</h1>
+            <h1 class="mt-2 text-2xl font-semibold text-white">Booking Reference</h1>
             <p class="mt-2 text-sm text-zinc-400">Review your paid appointment details and cancellation/refund policy.</p>
 
             @if (session('status'))
@@ -40,8 +40,8 @@
                     <span class="font-medium text-zinc-100">{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('F j, Y') }} at {{ \Carbon\Carbon::createFromTimeString($appointment->appointment_time)->format('g:i A') }}</span>
                 </div>
                 <div class="flex items-center justify-between gap-3">
-                    <span class="text-zinc-400">Stripe Session</span>
-                    <span class="font-medium text-zinc-100">{{ $appointment->stripe_session_id ?? 'N/A' }}</span>
+                    <span class="text-zinc-400">Reference Number</span>
+                    <span class="font-medium text-zinc-100">{{ $appointment->reference_number }}</span>
                 </div>
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-zinc-400">Amount Paid</span>
@@ -50,6 +50,12 @@
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-zinc-400">Status</span>
                     <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $appointment->status === 'paid' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300' }}">{{ strtoupper($appointment->status) }}</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-zinc-400">Refund Status</span>
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $appointment->refund_status === 'processed' ? 'bg-emerald-500/10 text-emerald-300' : ($appointment->refund_status === 'pending' ? 'bg-amber-500/10 text-amber-300' : ($appointment->refund_status === 'failed' ? 'bg-red-500/10 text-red-300' : 'bg-zinc-700 text-zinc-300')) }}">
+                        {{ strtoupper($appointment->refund_status ?? 'none') }}
+                    </span>
                 </div>
             </div>
 
@@ -67,11 +73,11 @@
             </div>
 
             @if ($canRequestRefund && $appointment->status === 'paid' && ! in_array($appointment->refund_status, ['pending', 'processed'], true))
-                <form method="POST" action="{{ route('bookings.cancel', $appointment) }}" class="mt-6">
+                <form id="cancel-booking-form" method="POST" action="{{ route('bookings.cancel', $appointment) }}" class="mt-6">
                     @csrf
                     <button
-                        type="submit"
-                        onclick="return confirm('Are you sure you want to cancel this booking and request a refund?')"
+                        type="button"
+                        x-on:click="cancelModalOpen = true"
                         class="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:bg-red-400"
                     >
                         Cancel Booking and Request Refund
@@ -80,11 +86,11 @@
             @else
                 <div class="mt-6 rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
                     @if ($appointment->refund_status === 'pending')
-                        Refund request submitted. Waiting for Stripe confirmation. Reference: <span class="font-semibold text-zinc-100">{{ $appointment->refund_reference }}</span>
+                        Refund request submitted. Waiting for Stripe confirmation. Reference Number: <span class="font-semibold text-zinc-100">{{ $appointment->refund_reference }}</span>
                     @elseif ($appointment->refund_status === 'processed')
-                        Refund processed. Reference: <span class="font-semibold text-zinc-100">{{ $appointment->refund_reference }}</span>
+                        Refund processed. Reference Number: <span class="font-semibold text-zinc-100">{{ $appointment->refund_reference }}</span>
                     @elseif ($appointment->refund_status === 'failed')
-                        Refund failed on payment provider update. Please contact support with reference: <span class="font-semibold text-zinc-100">{{ $appointment->refund_reference ?? 'N/A' }}</span>
+                        Refund failed on payment provider update. Please contact support with reference number: <span class="font-semibold text-zinc-100">{{ $appointment->refund_reference ?? 'N/A' }}</span>
                     @elseif (! $canRequestRefund && $appointment->status === 'paid')
                         Refund is no longer available because the appointment is within 10 minutes.
                     @else
@@ -93,6 +99,48 @@
                 </div>
             @endif
         </section>
+
+        <div
+            x-cloak
+            x-show="cancelModalOpen"
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+            role="dialog"
+            aria-modal="true"
+        >
+            <div
+                x-on:click.outside="cancelModalOpen = false"
+                class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
+            >
+                <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Confirm Cancellation</p>
+                <h2 class="mt-2 text-2xl font-semibold text-white">Cancel Booking?</h2>
+                <p class="mt-3 text-sm text-zinc-300">
+                    This action will cancel your booking and submit a refund request to Stripe.
+                    A {{ $deductionPercent }}% non-refundable deduction will apply.
+                </p>
+                <p class="mt-3 text-xs text-zinc-400">
+                    Refund is not available once the appointment is within 10 minutes.
+                </p>
+
+                <div class="mt-6 flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        x-on:click="cancelModalOpen = false"
+                        class="rounded-full border border-white/15 bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700"
+                    >
+                        Keep Booking
+                    </button>
+
+                    <button
+                        type="submit"
+                        form="cancel-booking-form"
+                        class="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
+                    >
+                        Yes, Cancel and Request Refund
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 </body>
 </html>

@@ -56,17 +56,46 @@
                                     ->get();
                                 $newCount = auth()->user()->appointments()
                                     ->where('created_at', '>=', now()->subDay())
+                                    ->whereNull('seen_at')
                                     ->count();
                             @endphp
 
                             {{-- Notification Bell --}}
-                            <details class="relative" id="notif-details">
+                            <details
+                                class="relative"
+                                id="notif-details"
+                                x-data="{
+                                    showUnread: {{ $newCount > 0 ? 'true' : 'false' }},
+                                    markBookingsSeen() {
+                                        if (! this.$el.open) {
+                                            return;
+                                        }
+
+                                        fetch('{{ route('notifications.bookings.mark-seen') }}', {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'Accept': 'application/json',
+                                            },
+                                        }).then(() => {
+                                            this.showUnread = false;
+                                        }).catch(() => {});
+                                    }
+                                }"
+                                x-on:toggle="markBookingsSeen()"
+                            >
                                 <summary class="list-none cursor-pointer relative flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-zinc-900 text-zinc-400 hover:border-amber-500/40 hover:text-amber-500 transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                                     </svg>
                                     @if($newCount > 0)
-                                        <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black leading-none">
+                                        <span
+                                            x-cloak
+                                            x-show="showUnread"
+                                            x-transition.opacity.scale.origin-top-right
+                                            class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black leading-none"
+                                        >
                                             {{ $newCount > 9 ? '9+' : $newCount }}
                                         </span>
                                     @endif
@@ -76,7 +105,12 @@
                                     <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
                                         <span class="text-xs font-semibold text-zinc-300 uppercase tracking-widest">My Bookings</span>
                                         @if($newCount > 0)
-                                            <span class="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full px-2 py-0.5 font-medium">
+                                            <span
+                                                x-cloak
+                                                x-show="showUnread"
+                                                x-transition.opacity.scale.origin-right
+                                                class="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full px-2 py-0.5 font-medium"
+                                            >
                                                 {{ $newCount }} new
                                             </span>
                                         @endif
@@ -93,7 +127,7 @@
                                         <ul class="divide-y divide-white/5 max-h-72 overflow-y-auto">
                                             @foreach($recentBookings as $booking)
                                                 @php
-                                                    $isNew = $booking->created_at >= now()->subDay();
+                                                    $isNew = $booking->created_at >= now()->subDay() && $booking->seen_at === null;
                                                 @endphp
                                                 <li class="{{ $isNew ? 'bg-amber-500/5' : '' }}">
                                                     <a href="{{ route('bookings.show', $booking) }}" class="flex items-start gap-3 px-4 py-3 transition hover:bg-white/5">

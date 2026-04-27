@@ -53,13 +53,26 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
-        $otpService->issueCode(
-            purpose: 'login',
-            channel: $this->method,
-            recipient: $recipient,
-            userId: (int) $user->id,
-            context: ['stage' => 'login-mfa'],
-        );
+        try {
+            $otpService->issueCode(
+                purpose: 'login',
+                channel: $this->method,
+                recipient: $recipient,
+                userId: (int) $user->id,
+                context: ['stage' => 'login-mfa'],
+            );
+        } catch (\Throwable $throwable) {
+            report($throwable);
+
+            $this->addError(
+                'method',
+                $this->method === 'email'
+                    ? 'Email verification is unavailable right now. Please use SMS verification instead.'
+                    : 'SMS verification is unavailable right now. Please try again later.'
+            );
+
+            return;
+        }
 
         session()->flash('status', 'mfa-code-sent');
     }

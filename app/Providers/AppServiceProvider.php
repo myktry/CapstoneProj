@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Observers\ModelActivityObserver;
 use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
+use App\Services\Sms\TextBeeSmsSender;
 use App\Services\Sms\VonageSmsSender;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
         $this->app->bind(SmsSender::class, function () {
             return match ((string) config('services.sms.driver', 'log')) {
+                'textbee' => new TextBeeSmsSender(),
                 'vonage' => new VonageSmsSender(),
                 default => new LogSmsSender(),
             };

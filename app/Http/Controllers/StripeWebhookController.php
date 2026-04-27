@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\RefundProcessedMail;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 
@@ -26,19 +28,39 @@ class StripeWebhookController extends Controller
 
         $type = (string) ($event->type ?? '');
 
-        if (! str_starts_with($type, 'refund.')) {
+        if (! str_starts_with($type, 'refund.') && $type !== 'charge.refunded') {
             return response('Event ignored.', 200);
         }
 
-        $refundObject = $event->data->object ?? null;
+        $refundId = '';
+        $paymentIntent = '';
+        $refundStatus = '';
 
-        if (! $refundObject) {
-            return response('Missing refund object.', 400);
+        if (str_starts_with($type, 'refund.')) {
+            $refundObject = $event->data->object ?? null;
+
+            if (! $refundObject) {
+                return response('Missing refund object.', 400);
+            }
+
+            $refundId = (string) ($refundObject->id ?? '');
+            $paymentIntent = (string) ($refundObject->payment_intent ?? '');
+            $refundStatus = (string) ($refundObject->status ?? '');
         }
 
-        $refundId = (string) ($refundObject->id ?? '');
-        $paymentIntent = (string) ($refundObject->payment_intent ?? '');
-        $refundStatus = (string) ($refundObject->status ?? '');
+        if ($type === 'charge.refunded') {
+            $chargeObject = $event->data->object ?? null;
+
+            if (! $chargeObject) {
+                return response('Missing charge object.', 400);
+            }
+
+            $paymentIntent = (string) ($chargeObject->payment_intent ?? '');
+            $refundStatus = ((int) ($chargeObject->amount_refunded ?? 0)) > 0 ? 'succeeded' : 'pending';
+
+            $refundData = $chargeObject->refunds->data[0] ?? null;
+            $refundId = (string) ($refundData->id ?? '');
+        }
 
         if ($refundId === '' && $paymentIntent === '') {
             return response('Refund identifiers missing.', 400);
@@ -60,6 +82,8 @@ class StripeWebhookController extends Controller
             default => 'pending',
         };
 
+        $wasProcessed = $appointment->refund_status === 'processed';
+
         $appointment->update([
             'refund_status' => $mappedRefundStatus,
             'refund_reference' => $refundId !== '' ? $refundId : $appointment->refund_reference,
@@ -68,6 +92,10 @@ class StripeWebhookController extends Controller
                 ? 'User cancellation refund failed on Stripe webhook update.'
                 : $appointment->cancellation_note,
         ]);
+
+        if ($mappedRefundStatus === 'processed' && ! $wasProcessed && $appointment->customer_email !== '') {
+            Mail::to($appointment->customer_email)->send(new RefundProcessedMail($appointment->fresh(['service'])));
+        }
 
         return response('Webhook handled.', 200);
     }

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
-use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
@@ -25,6 +24,8 @@ class AppointmentsTable
                         'customer_name',
                         'customer_phone',
                         'status',
+                        'stripe_session_id',
+                        'stripe_payment_intent_id',
                         'amount_paid',
                         'refund_status',
                         'cancelled_by',
@@ -50,16 +51,15 @@ class AppointmentsTable
                 TextColumn::make('appointment_time')
                     ->label('Time')
                     ->formatStateUsing(fn (string $state): string => date('g:i A', strtotime($state))),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'completed' => 'success',
-                        'paid'      => 'success',
-                        'pending'   => 'warning',
-                        'cancelled' => 'danger',
-                        default     => 'gray',
+                TextColumn::make('reference_number')
+                    ->label('Reference No.')
+                    ->formatStateUsing(fn ($state, $record): string => $record->reference_number)
+                    ->copyable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->orWhere('stripe_payment_intent_id', 'like', "%{$search}%")
+                            ->orWhere('stripe_session_id', 'like', "%{$search}%");
                     })
-                    ->sortable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('cancelled_by')
                     ->label('Cancellation Tag')
                     ->formatStateUsing(fn ($state, $record): string => $record->status === 'cancelled' && $state === 'user'
@@ -99,15 +99,6 @@ class AppointmentsTable
                     ]),
             ])
             ->defaultSort('appointment_date', 'asc')
-            ->recordActions([
-                Action::make('mark_done')
-                    ->label('Mark as done')
-                    ->icon('heroicon-m-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn ($record): bool => $record->status !== 'completed')
-                    ->action(fn ($record) => $record->update(['status' => 'completed'])),
-            ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

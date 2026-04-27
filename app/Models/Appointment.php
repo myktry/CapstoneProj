@@ -27,6 +27,7 @@ class Appointment extends Model
         'cancelled_by',
         'cancelled_at',
         'cancellation_note',
+        'seen_at',
     ];
 
     protected function casts(): array
@@ -34,12 +35,20 @@ class Appointment extends Model
         return [
             'refund_processed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'seen_at' => 'datetime',
         ];
     }
 
     public function getRefundableAmountAttribute(): int
     {
         return max(0, (int) $this->amount_paid - (int) $this->refund_deduction_amount);
+    }
+
+    public function getReferenceNumberAttribute(): string
+    {
+        return (string) ($this->stripe_payment_intent_id
+            ?: $this->stripe_session_id
+            ?: $this->id);
     }
 
     public function user(): BelongsTo

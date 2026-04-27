@@ -88,6 +88,10 @@
                 <span class="text-white font-medium">{{ $appointment->appointment_time }}</span>
             </div>
             <div class="border-t border-white/10 pt-3 flex justify-between text-sm">
+                <span class="text-zinc-400">Reference Number</span>
+                <span class="text-white font-medium font-mono text-xs break-all text-right">{{ $appointment->reference_number }}</span>
+            </div>
+            <div class="border-t border-white/10 pt-3 flex justify-between text-sm">
                 <span class="text-zinc-400">Amount Paid</span>
                 <span class="text-amber-400 font-bold text-base">
                     ₱{{ number_format($appointment->amount_paid / 100, 2) }}

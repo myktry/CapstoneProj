@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\BookingNotificationController;
 use App\Http\Controllers\BookingRefundController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\ReceiptDecryptionController;
@@ -90,6 +91,9 @@ Route::get('/book-appointment', function () {
 })->middleware('auth')->name('book.appointment');
 
 Route::middleware('auth')->group(function () {
+	Route::post('/notifications/bookings/mark-seen', [BookingNotificationController::class, 'markSeen'])
+		->name('notifications.bookings.mark-seen');
+
 	Route::get('/my-bookings/{appointment}', [BookingRefundController::class, 'show'])
 		->name('bookings.show');
 	Route::post('/my-bookings/{appointment}/cancel', [BookingRefundController::class, 'cancel'])

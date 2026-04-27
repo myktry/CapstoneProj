@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('cancelled_by')->nullable()->after('refund_processed_at');
             $table->timestamp('cancelled_at')->nullable()->after('cancelled_by');
             $table->text('cancellation_note')->nullable()->after('cancelled_at');
+            $table->timestamp('seen_at')->nullable()->after('cancellation_note');
 
             $table->index(['status', 'cancelled_by'], 'appointments_status_cancelled_by_idx');
             $table->index('refund_status', 'appointments_refund_status_idx');
@@ -46,6 +47,7 @@ return new class extends Migration
                 'cancelled_by',
                 'cancelled_at',
                 'cancellation_note',
+                'seen_at',
             ]);
         });
     }

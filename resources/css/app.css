@@ -8,6 +8,10 @@ html {
 	scroll-behavior: smooth;
 }
 
+[x-cloak] {
+	display: none !important;
+}
+
 [data-animate] {
 	opacity: 0;
 	transform: translateY(18px);

@@ -1,5 +1,17 @@
 <?php
 
+$smtpScheme = env('MAIL_SCHEME');
+
+if (! $smtpScheme) {
+    $mailEncryption = strtolower((string) env('MAIL_ENCRYPTION', ''));
+
+    $smtpScheme = match ($mailEncryption) {
+        'ssl' => 'smtps',
+        'tls' => 'smtp',
+        default => null,
+    };
+}
+
 return [
 
     /*
@@ -39,7 +51,7 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
+            'scheme' => $smtpScheme,
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
@@ -81,10 +93,10 @@ return [
 
         'failover' => [
             'transport' => 'failover',
-            'mailers' => [
-                'smtp',
-                'log',
-            ],
+            'mailers' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('MAIL_FAILOVER_MAILERS', 'smtp,log'))
+            ))),
             'retry_after' => 60,
         ],
 
