@@ -15,6 +15,7 @@ class Appointment extends Model
         'customer_name',
         'customer_email',
         'customer_phone',
+        'customer_stego_png_base64',
         'status',
         'stripe_session_id',
         'stripe_payment_intent_id',

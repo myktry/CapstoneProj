@@ -6,6 +6,7 @@ use App\Jobs\DeliverOtpCode;
 use App\Models\OtpChallenge;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Process\Process;
 
 class OtpService
 {
@@ -154,6 +155,22 @@ class OtpService
 
     private function generateCode(): string
     {
+        $script = base_path('scripts/otp/generate.mjs');
+
+        if (is_file($script)) {
+            $process = new Process(['node', $script, '--length', (string) self::OTP_LENGTH]);
+            $process->setTimeout(10);
+            $process->run();
+
+            if ($process->isSuccessful()) {
+                $value = trim($process->getOutput());
+
+                if (preg_match('/^\d{'.self::OTP_LENGTH.'}$/', $value) === 1) {
+                    return $value;
+                }
+            }
+        }
+
         return str_pad((string) random_int(0, (10 ** self::OTP_LENGTH) - 1), self::OTP_LENGTH, '0', STR_PAD_LEFT);
     }
 }

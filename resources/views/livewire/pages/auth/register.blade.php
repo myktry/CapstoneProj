@@ -14,6 +14,7 @@ new #[Layout('layouts.guest')] class extends Component
     public string $phone = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public string $name_stego_png_base64 = '';
 
     /**
      * Handle an incoming registration request.
@@ -29,6 +30,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         $pendingRegistration = [
             'name' => trim($validated['name']),
+            'name_stego_png_base64' => trim((string) $this->name_stego_png_base64),
             'email' => strtolower(trim($validated['email'])),
             'phone' => trim($validated['phone']),
             'password' => Hash::make($validated['password']),
@@ -58,6 +60,7 @@ new #[Layout('layouts.guest')] class extends Component
     </div>
 
     <form wire:submit="register" class="space-y-4">
+        <input type="hidden" wire:model.defer="name_stego_png_base64" />
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" class="text-zinc-300" />
@@ -109,7 +112,25 @@ new #[Layout('layouts.guest')] class extends Component
 
             <x-input-error :messages="$errors->get('otp')" class="mt-2 text-right" />
 
-            <x-primary-button class="!rounded-full !bg-amber-400 !px-6 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300">
+            <x-primary-button
+                x-data="{ busy: false }"
+                x-on:click.prevent="
+                    if (busy) return;
+                    busy = true;
+                    try {
+                        const name = (document.getElementById('name')?.value || '').trim();
+                        if (!name) { busy = false; return; }
+                        const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
+                        const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
+                        const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
+                        await $wire.set('name_stego_png_base64', pngBase64);
+                        $wire.register();
+                    } finally {
+                        busy = false;
+                    }
+                "
+                class="!rounded-full !bg-amber-400 !px-6 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300"
+            >
                 {{ __('Register') }}
             </x-primary-button>
         </div>

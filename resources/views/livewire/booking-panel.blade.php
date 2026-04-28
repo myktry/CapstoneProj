@@ -93,9 +93,12 @@
                             <p class="text-xs uppercase tracking-widest text-amber-400/70">Step 4: Your Information</p>
                         </div>
 
+                        <input type="hidden" wire:model.defer="form.stego_png_base64" />
+
                         <div>
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Full Name *</label>
                             <input
+                                id="booking_customer_name"
                                 type="text"
                                 wire:model.blur="form.name"
                                 placeholder="John Doe"
@@ -106,6 +109,7 @@
                         <div>
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Email Address *</label>
                             <input
+                                id="booking_customer_email"
                                 type="email"
                                 wire:model.blur="form.email"
                                 placeholder="john@example.com"
@@ -143,7 +147,28 @@
                             <!-- Submit Button -->
                             <button
                                 type="button"
-                                wire:click="submitBooking"
+                                x-data="{
+                                    busy: false,
+                                    async secureAndSubmit() {
+                                        if (this.busy) return;
+                                        this.busy = true;
+                                        try {
+                                            const name = (document.getElementById('booking_customer_name')?.value || '').trim();
+                                            const email = (document.getElementById('booking_customer_email')?.value || '').trim();
+                                            if (!name || !email) return;
+
+                                            const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
+                                            const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name, email });
+                                            const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
+
+                                            await $wire.set('form.stego_png_base64', pngBase64);
+                                            await $wire.submitBooking();
+                                        } finally {
+                                            this.busy = false;
+                                        }
+                                    }
+                                }"
+                                x-on:click="secureAndSubmit()"
                                 class="w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-4 font-bold text-zinc-900 transition duration-200 hover:shadow-lg hover:shadow-amber-500/30 active:scale-95"
                             >
                                 Continue to SMS Verification

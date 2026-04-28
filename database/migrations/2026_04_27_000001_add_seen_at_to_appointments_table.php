@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('appointments', 'seen_at')) {
+            return;
+        }
+
         Schema::table('appointments', function (Blueprint $table): void {
             $table->timestamp('seen_at')->nullable()->after('cancellation_note');
         });
@@ -15,6 +19,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('appointments', 'seen_at')) {
+            return;
+        }
+
         Schema::table('appointments', function (Blueprint $table): void {
             $table->dropColumn('seen_at');
         });

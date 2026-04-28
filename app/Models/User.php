@@ -21,6 +21,7 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'name_stego_png_base64',
         'email',
         'phone',
         'password',

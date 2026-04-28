@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Volt\Volt;
+use App\Models\Appointment;
 
 Route::get('/', function () {
 	if (auth()->check() && auth()->user()?->isAdmin()) {
@@ -123,6 +124,31 @@ Route::middleware('auth')->group(function () {
 	Route::post('/admin/security/receipts/decrypt', [ReceiptDecryptionController::class, 'decrypt'])
 		->middleware('throttle:receipt-decrypt')
 		->name('admin.security.receipts.decrypt');
+
+	Route::get('/stego/test/{appointment}', function (Appointment $appointment) {
+		abort_unless((int) $appointment->user_id === (int) request()->user()?->id, 403);
+
+		return view('stego.test', [
+			'appointment' => $appointment->loadMissing('service'),
+		]);
+	})->name('stego.test');
+
+	Route::get('/stego/test-latest', function () {
+		$appointment = Appointment::query()
+			->where('user_id', auth()->id())
+			->latest('id')
+			->firstOrFail();
+
+		return redirect()->route('stego.test', ['appointment' => $appointment->id]);
+	})->name('stego.test-latest');
+
+	Route::get('/stego/user', function () {
+		$user = request()->user();
+
+		return view('stego.user', [
+			'user' => $user,
+		]);
+	})->name('stego.user');
 });
 
 require __DIR__.'/auth.php';

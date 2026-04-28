@@ -6,6 +6,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
+use Illuminate\Support\Str;
 
 new #[Layout('layouts.guest')] class extends Component
 {
@@ -55,7 +56,8 @@ new #[Layout('layouts.guest')] class extends Component
         }
 
         $user = User::query()->create([
-            'name' => $pending['name'],
+            'name' => 'HIDDEN',
+            'name_stego_png_base64' => (string) ($pending['name_stego_png_base64'] ?? ''),
             'email' => $pending['email'],
             'phone' => $pending['phone'],
             'password' => $pending['password'],

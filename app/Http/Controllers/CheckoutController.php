@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Stripe\Stripe;
 use Stripe\Checkout\Session as StripeSession;
 
@@ -41,19 +42,21 @@ class CheckoutController extends Controller
                     'quantity' => 1,
                 ],
             ],
-            'customer_email' => $data['customer_email'],
             'metadata'       => [
                 'user_id'          => $data['user_id'] ?? '',
                 'service_id'       => $data['service_id'],
                 'appointment_date' => $data['appointment_date'],
                 'appointment_time' => $data['appointment_time'],
-                'customer_name'    => $data['customer_name'],
-                'customer_email'   => $data['customer_email'],
                 'customer_phone'   => $data['customer_phone'],
             ],
             'success_url' => route('booking.success') . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url'  => route('booking.cancel'),
         ]);
+
+        // Stripe metadata values are size-limited; store the stego payload server-side.
+        Cache::put('booking:'.$session->id, [
+            'customer_stego_png_base64' => (string) ($data['customer_stego_png_base64'] ?? ''),
+        ], now()->addHours(2));
 
         // Store session ID in Laravel session for later verification
         $request->session()->put('stripe_session_id', $session->id);
@@ -85,15 +88,18 @@ class CheckoutController extends Controller
 
         if (! $existing) {
             $meta = $stripeSession->metadata;
+            $cached = Cache::pull('booking:'.$sessionId, []);
+            $stego = (string) ($cached['customer_stego_png_base64'] ?? '');
 
             Appointment::create([
                 'user_id'          => $meta->user_id ?: null,
                 'service_id'       => $meta->service_id,
                 'appointment_date' => $meta->appointment_date,
                 'appointment_time' => $meta->appointment_time,
-                'customer_name'    => $meta->customer_name,
-                'customer_email'   => $meta->customer_email,
                 'customer_phone'   => $meta->customer_phone,
+                'customer_name'    => 'HIDDEN',
+                'customer_email'   => '',
+                'customer_stego_png_base64' => $stego,
                 'status'           => 'paid',
                 'stripe_session_id'=> $sessionId,
                 'stripe_payment_intent_id' => (string) ($stripeSession->payment_intent ?? ''),

@@ -1,4 +1,12 @@
 import './bootstrap';
+import {
+	createCoverImageLike,
+	hideUserDataInImageLike,
+	revealUserDataFromImageLike,
+	imageLikeToPngBase64,
+	pngBase64ToImageLike,
+	stegCapacity,
+} from './stego/index.js';
 
 const animatedElements = document.querySelectorAll('[data-animate]');
 
@@ -17,3 +25,12 @@ if (animatedElements.length) {
 
 	animatedElements.forEach((el) => observer.observe(el));
 }
+
+window.StegoDemo = {
+	createCoverImageLike,
+	hideUserDataInImageLike,
+	revealUserDataFromImageLike,
+	imageLikeToPngBase64,
+	pngBase64ToImageLike,
+	stegCapacity,
+};

@@ -11,6 +11,7 @@ new class extends Component
     public string $name = '';
     public string $email = '';
     public string $phone = '';
+    public string $name_stego_png_base64 = '';
 
     /**
      * Mount the component.
@@ -20,6 +21,7 @@ new class extends Component
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
         $this->phone = Auth::user()->phone ?? '';
+        $this->name_stego_png_base64 = Auth::user()->name_stego_png_base64 ?? '';
     }
 
     /**
@@ -33,9 +35,16 @@ new class extends Component
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
             'phone' => ['required', 'string', 'max:20'],
+            'name_stego_png_base64' => ['required', 'string'],
         ]);
 
-        $user->fill($validated);
+        // Store the real name only in stego; keep the plaintext column as a placeholder.
+        $user->fill([
+            'name' => 'HIDDEN',
+            'name_stego_png_base64' => $validated['name_stego_png_base64'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+        ]);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -77,9 +86,19 @@ new class extends Component
     </header>
 
     <form wire:submit="updateProfileInformation" class="mt-6 space-y-6">
+        <input type="hidden" wire:model.defer="name_stego_png_base64" />
         <div>
             <x-input-label for="name" :value="__('Name')" class="text-zinc-300" />
-            <x-text-input wire:model="name" id="name" name="name" type="text" class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400" required autofocus autocomplete="name" />
+            <x-text-input
+                wire:model="name"
+                id="name"
+                name="name"
+                type="text"
+                class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                required
+                autofocus
+                autocomplete="name"
+            />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
@@ -114,7 +133,27 @@ new class extends Component
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button class="!rounded-full !bg-amber-400 !px-5 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300">{{ __('Save') }}</x-primary-button>
+            <x-primary-button
+                x-data="{ busy: false }"
+                x-on:click.prevent="
+                    if (busy) return;
+                    busy = true;
+                    try {
+                        const name = (document.getElementById('name')?.value || '').trim();
+                        if (!name) { busy = false; return; }
+                        const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
+                        const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
+                        const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
+                        await $wire.set('name_stego_png_base64', pngBase64);
+                        $wire.updateProfileInformation();
+                    } finally {
+                        busy = false;
+                    }
+                "
+                class="!rounded-full !bg-amber-400 !px-5 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300"
+            >
+                {{ __('Save') }}
+            </x-primary-button>
 
             <x-action-message class="me-3 text-zinc-400" on="profile-updated">
                 {{ __('Saved.') }}

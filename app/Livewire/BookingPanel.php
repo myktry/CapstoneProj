@@ -19,6 +19,7 @@ class BookingPanel extends Component
         'name' => '',
         'email' => '',
         'phone' => '',
+        'stego_png_base64' => '',
     ];
 
     protected $listeners = ['open-booking' => 'openPanel', 'select-date' => 'handleDateSelected'];
@@ -93,6 +94,7 @@ class BookingPanel extends Component
             'name' => trim($this->form['name']),
             'email' => trim($this->form['email']),
             'phone' => trim($this->form['phone']),
+            'stego_png_base64' => trim($this->form['stego_png_base64']),
         ];
     }
 
@@ -148,14 +150,18 @@ class BookingPanel extends Component
             return;
         }
 
+        if (empty(trim((string) ($this->form['stego_png_base64'] ?? '')))) {
+            $this->dispatch('notify', message: 'Unable to secure booking payload. Please try again.');
+            return;
+        }
+
         Session::put('pending_booking_draft', [
             'user_id'          => auth()->id(),
             'service_id'       => $this->selectedServiceId,
             'appointment_date' => $this->selectedDate,
             'appointment_time' => $this->selectedTime,
-            'customer_name'    => trim($this->form['name']),
-            'customer_email'   => trim($this->form['email']),
             'customer_phone'   => trim($this->form['phone']),
+            'customer_stego_png_base64' => trim($this->form['stego_png_base64']),
         ]);
 
         $this->redirect(route('booking.verify-sms'), navigate: false);
