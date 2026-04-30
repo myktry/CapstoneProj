@@ -215,8 +215,8 @@ new #[Layout('layouts.app')] class extends Component
 
         @if (config('services.sms.driver') === 'log')
             <p class="mt-4 text-xs text-zinc-500">SMS driver is set to log in this environment. Use your application logs to read OTP messages during development.</p>
-        @elseif (config('services.sms.driver') === 'vonage')
-            <p class="mt-4 text-xs text-zinc-500">Vonage trial accounts can send SMS only to verified numbers in your Vonage dashboard.</p>
+        @elseif (config('services.sms.driver') === 'textbee')
+            <p class="mt-4 text-xs text-zinc-500">TextBee sends SMS through your connected device. Check your TextBee dashboard if a message does not arrive.</p>
         @endif
     </div>
 </div>

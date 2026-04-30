@@ -7,6 +7,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\ReceiptDecryptionController;
 use App\Models\ContactSetting;
 use App\Models\GalleryItem;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -97,6 +98,12 @@ Route::get('/book-appointment', function () {
 Route::middleware('auth')->group(function () {
 	Route::post('/notifications/bookings/mark-seen', [BookingNotificationController::class, 'markSeen'])
 		->name('notifications.bookings.mark-seen');
+	Route::get('/notifications', [BookingNotificationController::class, 'getNotifications'])
+		->name('notifications.index');
+	Route::patch('/notifications/{notification}/read', [BookingNotificationController::class, 'markAsRead'])
+		->name('notifications.mark-read');
+	Route::post('/notifications/mark-all-read', [BookingNotificationController::class, 'markAllAsRead'])
+		->name('notifications.mark-all-read');
 
 	Route::get('/my-bookings/{appointment}', [BookingRefundController::class, 'show'])
 		->name('bookings.show');
@@ -111,7 +118,14 @@ Route::middleware('auth')->group(function () {
 		return redirect()->route('home');
 	})->name('dashboard');
 
-	Route::view('/profile', 'profile')->name('profile');
+	Route::get('/profile', function () {
+		$user = request()->user();
+
+		return view('profile', [
+			'notifications' => $user?->notifications()->latest()->limit(10)->get() ?? collect(),
+			'unreadNotificationCount' => $user?->unreadNotifications()->count() ?? 0,
+		]);
+	})->name('profile');
 
 	Route::post('/logout', function () {
 		auth()->guard('web')->logout();

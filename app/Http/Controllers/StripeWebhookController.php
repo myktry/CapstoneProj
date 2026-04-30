@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\RefundProcessedMail;
 use App\Models\Appointment;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
@@ -94,7 +95,17 @@ class StripeWebhookController extends Controller
         ]);
 
         if ($mappedRefundStatus === 'processed' && ! $wasProcessed && $appointment->customer_email !== '') {
-            Mail::to($appointment->customer_email)->queue(new RefundProcessedMail($appointment->fresh(['service'])));
+            Mail::to($appointment->customer_email)->send(new RefundProcessedMail($appointment->fresh(['service'])));
+            if ($appointment->user_id) {
+                UserNotification::create([
+                    'user_id' => $appointment->user_id,
+                    'type' => 'refund_processed',
+                    'title' => 'Refund Processed',
+                    'message' => "Your refund of ".number_format($appointment->refund_amount / 100, 2)." has been successfully processed.",
+                    'related_model' => 'Appointment',
+                    'related_id' => $appointment->id,
+                ]);
+            }
         }
 
         return response('Webhook handled.', 200);

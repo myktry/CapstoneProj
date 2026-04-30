@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\RefundProcessedMail;
+use App\Jobs\SyncRefundStatus;
 use App\Models\Appointment;
+use App\Services\RefundStatusSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Stripe\Checkout\Session as StripeSession;
 use Stripe\Refund;
 use Stripe\Stripe;
 
 class BookingRefundController extends Controller
 {
-    public function show(Request $request, Appointment $appointment)
+    public function show(Request $request, Appointment $appointment, RefundStatusSyncService $refundStatusSyncService)
     {
         abort_unless((int) $appointment->user_id === (int) $request->user()?->id, 403);
 
@@ -22,7 +22,7 @@ class BookingRefundController extends Controller
             $appointment->update(['seen_at' => now()]);
         }
 
-        $this->syncRefundStatusFromStripe($appointment);
+        $refundStatusSyncService->sync($appointment);
         $appointment->refresh();
 
         $deductionPercent = max(0, min(100, (int) config('refund.deduction_percent', 25)));
@@ -113,6 +113,8 @@ class BookingRefundController extends Controller
             'cancellation_note' => 'User cancelled booking from account notification/details page. Refund pending Stripe confirmation.',
         ]);
 
+        SyncRefundStatus::dispatch($appointment->id)->delay(now()->addMinute());
+
         return back()->with('status', 'Booking cancelled and refund requested. We are waiting for Stripe confirmation. Reference: '.$refund->id);
     }
 
@@ -143,42 +145,4 @@ class BookingRefundController extends Controller
         }
     }
 
-    private function syncRefundStatusFromStripe(Appointment $appointment): void
-    {
-        if ($appointment->refund_status !== 'pending' || ! $appointment->refund_reference) {
-            return;
-        }
-
-        try {
-            Stripe::setApiKey((string) config('services.stripe.secret'));
-            $refund = Refund::retrieve((string) $appointment->refund_reference);
-            $stripeStatus = (string) ($refund->status ?? '');
-        } catch (\Throwable $exception) {
-            return;
-        }
-
-        $mappedStatus = match ($stripeStatus) {
-            'succeeded' => 'processed',
-            'failed', 'canceled' => 'failed',
-            default => 'pending',
-        };
-
-        if ($mappedStatus === 'pending') {
-            return;
-        }
-
-        $wasProcessed = $appointment->refund_status === 'processed';
-
-        $appointment->update([
-            'refund_status' => $mappedStatus,
-            'refund_processed_at' => $mappedStatus === 'processed' ? now() : null,
-            'cancellation_note' => $mappedStatus === 'failed'
-                ? 'User cancellation refund failed on Stripe sync check.'
-                : $appointment->cancellation_note,
-        ]);
-
-        if ($mappedStatus === 'processed' && ! $wasProcessed && $appointment->customer_email !== '') {
-            Mail::to($appointment->customer_email)->queue(new RefundProcessedMail($appointment->fresh(['service'])));
-        }
-    }
 }
