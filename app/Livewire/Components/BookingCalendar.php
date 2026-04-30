@@ -10,6 +10,7 @@ class BookingCalendar extends Component
 {
     public int $currentMonth;
     public int $currentYear;
+    public int $maxAdvanceMonths = 12;
     public ?string $selectedDate = null;
     public ?string $blockedDate = null;
     public ?string $blockedDateType = null;
@@ -24,6 +25,10 @@ class BookingCalendar extends Component
 
     public function previousMonth()
     {
+        if (! $this->canGoPreviousMonth()) {
+            return;
+        }
+
         $date = Carbon::create($this->currentYear, $this->currentMonth, 1)->subMonth();
         $this->currentMonth = $date->month;
         $this->currentYear = $date->year;
@@ -31,6 +36,10 @@ class BookingCalendar extends Component
 
     public function nextMonth()
     {
+        if (! $this->canGoNextMonth()) {
+            return;
+        }
+
         $date = Carbon::create($this->currentYear, $this->currentMonth, 1)->addMonth();
         $this->currentMonth = $date->month;
         $this->currentYear = $date->year;
@@ -62,6 +71,7 @@ class BookingCalendar extends Component
 
     public function getCalendarDaysProperty()
     {
+        $today = now()->startOfDay();
         $firstDay = Carbon::create($this->currentYear, $this->currentMonth, 1);
         $lastDay = $firstDay->copy()->endOfMonth();
         $daysInMonth = $lastDay->day;
@@ -101,7 +111,7 @@ class BookingCalendar extends Component
             $isClosed = filled($closedData);
 
             // Don't allow booking dates in the past
-            $isPast = $dateObj->isBefore(now()->startOfDay());
+            $isPast = $dateObj->isBefore($today);
 
             $days[] = [
                 'date' => $i,
@@ -132,6 +142,21 @@ class BookingCalendar extends Component
     public function getMonthYearProperty()
     {
         return Carbon::create($this->currentYear, $this->currentMonth, 1)->format('F Y');
+    }
+
+    public function canGoPreviousMonth(): bool
+    {
+        $current = Carbon::create($this->currentYear, $this->currentMonth, 1)->startOfMonth();
+
+        return $current->greaterThan(now()->startOfMonth());
+    }
+
+    public function canGoNextMonth(): bool
+    {
+        $current = Carbon::create($this->currentYear, $this->currentMonth, 1)->startOfMonth();
+        $lastAllowed = now()->startOfMonth()->addMonths($this->maxAdvanceMonths);
+
+        return $current->lessThan($lastAllowed);
     }
 
     public function render()

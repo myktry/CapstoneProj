@@ -3,6 +3,8 @@
     <div class="mb-4 flex items-center justify-between">
         <button
             wire:click="previousMonth"
+            wire:loading.attr="disabled"
+            @disabled(! $this->canGoPreviousMonth())
             class="rounded-full p-2 text-amber-400 hover:bg-amber-500/20 transition-colors duration-200"
             aria-label="Previous month"
         >
@@ -15,6 +17,8 @@
 
         <button
             wire:click="nextMonth"
+            wire:loading.attr="disabled"
+            @disabled(! $this->canGoNextMonth())
             class="rounded-full p-2 text-amber-400 hover:bg-amber-500/20 transition-colors duration-200"
             aria-label="Next month"
         >
@@ -41,7 +45,7 @@
                 @if ($day['isCurrentMonth'])
                     <button
                         type="button"
-                        wire:key="day-{{ $loop->index }}"
+                        wire:key="day-{{ $currentYear }}-{{ $currentMonth }}-{{ $day['fullDate'] !== '' ? $day['fullDate'] : 'pad-'.$loop->index }}"
                         wire:click="selectDate('{{ $day['fullDate'] }}')"
                         :class="{
                             'bg-amber-500 text-zinc-900 font-bold shadow-lg shadow-amber-500/30': @json($this->selectedDate === $day['fullDate'] && ! $day['isClosed'] && ! $day['isPast']),

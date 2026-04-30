@@ -21,7 +21,6 @@
         "alpinejs": "^3.15.8",
         "crypto-js": "^4.2.0",
         "flatpickr": "^4.6.13",
-        "nodemailer": "^7.0.0",
         "otp-generator": "^4.0.1",
         "stegano-kit": "^1.1.0"
     }
