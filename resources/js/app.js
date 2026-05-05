@@ -34,8 +34,3 @@ window.StegoDemo = {
 	pngBase64ToImageLike,
 	stegCapacity,
 };
-
-// Start Alpine after Livewire scripts are loaded (Livewire registers Alpine plugin).
-if (window.Alpine && typeof window.Alpine.start === 'function') {
-	window.Alpine.start();
-}

@@ -60,7 +60,7 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP to your email address to complete registration.</p>
     </div>
 
-    <form wire:submit="register" id="registration-form" class="space-y-4">
+    <form wire:submit.prevent="register" method="POST" id="registration-form" class="space-y-4">
         <input type="hidden" id="name-stego-png-base64" wire:model.defer="name_stego_png_base64" />
         <!-- Name -->
         <div>
