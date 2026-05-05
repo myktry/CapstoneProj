@@ -135,8 +135,7 @@ class OtpService
 
         if ($channel === 'email') {
             try {
-                // Force SMTP so OTP email delivery does not silently fall back to log/array transports.
-                Mail::mailer('smtp')->to($recipient)->send(
+                Mail::mailer((string) config('mail.default', 'smtp'))->to($recipient)->send(
                     new OtpCodeMail(
                         code: $code,
                         purpose: $purpose,
@@ -147,6 +146,12 @@ class OtpService
                 Log::error('OTP email delivery failed.', [
                     'purpose' => $purpose,
                     'recipient' => $recipient,
+                    'mailer' => config('mail.default', 'smtp'),
+                    'smtp_host' => config('mail.mailers.smtp.host'),
+                    'smtp_port' => config('mail.mailers.smtp.port'),
+                    'smtp_encryption' => config('mail.mailers.smtp.scheme') ?? config('mail.mailers.smtp.encryption'),
+                    'exception_class' => $exception::class,
+                    'previous_exception' => $exception->getPrevious()?->getMessage(),
                     'error' => $exception->getMessage(),
                 ]);
 
