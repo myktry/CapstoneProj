@@ -84,18 +84,42 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
-        $otpService->issueCode(
-            purpose: 'register',
-            channel: 'email',
-            recipient: $pending['email'],
-            context: ['stage' => 'registration-resend'],
-        );
+        $this->sendVerificationCode($otpService, ['stage' => 'registration-resend']);
+    }
 
-        session()->flash('status', 'verification-code-sent');
+    private function sendVerificationCode(OtpService $otpService, array $context = ['stage' => 'registration']): void
+    {
+        $pending = session('pending_registration');
+
+        if (! is_array($pending) || empty($pending['email'])) {
+            return;
+        }
+
+        try {
+            $otpService->issueCode(
+                purpose: 'register',
+                channel: 'email',
+                recipient: $pending['email'],
+                context: $context,
+            );
+
+            session()->flash('status', 'verification-code-sent');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            if ($exception->errors() !== [] && array_key_exists('otp', $exception->errors())) {
+                $this->addError('otp', $exception->errors()['otp'][0]);
+
+                return;
+            }
+
+            throw $exception;
+        }
     }
 }; ?>
 
-<div>
+<div
+    x-data="{ autoSent: false }"
+    x-init="if (!autoSent && {{ session('status') === 'verification-code-sent' ? 'false' : 'true' }}) { autoSent = true; $nextTick(() => $wire.resend()) }"
+>
     <div class="mb-6">
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Verify Email</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Enter OTP Code</h1>
