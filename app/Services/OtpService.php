@@ -2,14 +2,15 @@
 
 namespace App\Services;
 
-use App\Jobs\DeliverOtpCode;
 use App\Models\OtpChallenge;
 use App\Mail\OtpCodeMail;
+use App\Services\Sms\SmsSender;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\Process\Process;
-use App\Services\Sms\SmsSender;
+use Throwable;
 
 class OtpService
 {
@@ -133,13 +134,26 @@ class OtpService
         }
 
         if ($channel === 'email') {
-            Mail::to($recipient)->send(
-                new OtpCodeMail(
-                    code: $code,
-                    purpose: $purpose,
-                    expiresInMinutes: self::OTP_EXPIRY_MINUTES,
-                )
-            );
+            try {
+                // Force SMTP so OTP email delivery does not silently fall back to log/array transports.
+                Mail::mailer('smtp')->to($recipient)->send(
+                    new OtpCodeMail(
+                        code: $code,
+                        purpose: $purpose,
+                        expiresInMinutes: self::OTP_EXPIRY_MINUTES,
+                    )
+                );
+            } catch (Throwable $exception) {
+                Log::error('OTP email delivery failed.', [
+                    'purpose' => $purpose,
+                    'recipient' => $recipient,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'otp' => 'We could not send the verification email right now. Please try again in a moment.',
+                ]);
+            }
 
             return;
         }
