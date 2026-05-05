@@ -59,8 +59,8 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="mt-2 text-sm text-zinc-400">This registration creates a customer account only.</p>
     </div>
 
-    <form wire:submit="register" class="space-y-4">
-        <input type="hidden" wire:model.defer="name_stego_png_base64" />
+    <form wire:submit="register" id="registration-form" class="space-y-4">
+        <input type="hidden" id="name-stego-png-base64" wire:model.defer="name_stego_png_base64" />
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" class="text-zinc-300" />
@@ -113,6 +113,7 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('otp')" class="mt-2 text-right" />
 
             <x-primary-button
+                type="button"
                 x-data="{ busy: false }"
                 x-on:click.prevent="
                     if (busy) return;
@@ -123,8 +124,13 @@ new #[Layout('layouts.guest')] class extends Component
                         const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
                         const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
                         const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
-                        await $wire.set('name_stego_png_base64', pngBase64);
-                        $wire.register();
+                        const input = document.getElementById('name-stego-png-base64');
+                        if (input) {
+                            input.value = pngBase64;
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+
+                        document.getElementById('registration-form')?.requestSubmit();
                     } finally {
                         busy = false;
                     }
