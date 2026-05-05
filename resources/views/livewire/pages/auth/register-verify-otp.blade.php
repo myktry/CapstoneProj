@@ -99,7 +99,10 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="mb-6">
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Verify Email</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Enter OTP Code</h1>
-        <p class="mt-2 text-sm text-zinc-400">We sent a 6-digit code to your email to finish account creation.</p>
+        <p class="mt-2 text-sm text-zinc-400">We sent a 6-digit OTP to your email address to finish account creation.</p>
+        @if (is_array(session('pending_registration')) && ! empty(session('pending_registration')['email'] ?? null))
+            <p class="mt-2 text-sm text-amber-200">Check the inbox for <span class="font-medium">{{ session('pending_registration')['email'] }}</span>.</p>
+        @endif
     </div>
 
     @if (session('status') === 'verification-code-sent')

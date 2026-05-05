@@ -57,6 +57,7 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Create Account</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Join Black Ember</h1>
         <p class="mt-2 text-sm text-zinc-400">This registration creates a customer account only.</p>
+        <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP to your email address to complete registration.</p>
     </div>
 
     <form wire:submit="register" id="registration-form" class="space-y-4">
