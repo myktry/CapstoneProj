@@ -114,32 +114,7 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('otp')" class="mt-2 text-right" />
 
             <x-primary-button
-                type="button"
-                x-data="{ busy: false }"
-                x-on:click.prevent="
-                    if (busy) return;
-                    busy = true;
-                    try {
-                        const name = (document.getElementById('name')?.value || '').trim();
-                        if (name && window.StegoDemo) {
-                            try {
-                                const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
-                                const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
-                                const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
-                                const input = document.getElementById('name-stego-png-base64');
-                                if (input) {
-                                    input.value = pngBase64;
-                                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                                }
-                            } catch (error) {
-                                console.warn('Stego payload generation failed; continuing registration without it.', error);
-                            }
-                        }
-                    } finally {
-                        document.getElementById('registration-form')?.requestSubmit();
-                        busy = false;
-                    }
-                "
+                type="submit"
                 class="!rounded-full !bg-amber-400 !px-6 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300"
             >
                 {{ __('Register') }}
