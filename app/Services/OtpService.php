@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Jobs\DeliverOtpCode;
 use App\Models\OtpChallenge;
+use App\Mail\OtpCodeMail;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\Process\Process;
+use App\Services\Sms\SmsSender;
 
 class OtpService
 {
@@ -129,13 +132,21 @@ class OtpService
             ]);
         }
 
-        DeliverOtpCode::dispatch(
-            channel: $channel,
-            recipient: $recipient,
-            code: $code,
-            purpose: $purpose,
-            expiresInMinutes: self::OTP_EXPIRY_MINUTES,
-        );
+        if ($channel === 'email') {
+            Mail::to($recipient)->send(
+                new OtpCodeMail(
+                    code: $code,
+                    purpose: $purpose,
+                    expiresInMinutes: self::OTP_EXPIRY_MINUTES,
+                )
+            );
+
+            return;
+        }
+
+        $message = "Your Black Ember verification code is {$code}. It expires in " . self::OTP_EXPIRY_MINUTES . ' minutes.';
+
+        app(SmsSender::class)->send($recipient, $message);
     }
 
     private function normalizeRecipient(string $channel, string $recipient): string
