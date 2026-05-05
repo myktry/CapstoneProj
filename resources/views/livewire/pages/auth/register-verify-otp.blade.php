@@ -116,10 +116,7 @@ new #[Layout('layouts.guest')] class extends Component
     }
 }; ?>
 
-<div
-    x-data="{ autoSent: false }"
-    x-init="if (!autoSent && {{ session('status') === 'verification-code-sent' ? 'false' : 'true' }}) { autoSent = true; $nextTick(() => $wire.resend()) }"
->
+<div>
     <div class="mb-6">
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Verify Email</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Enter OTP Code</h1>

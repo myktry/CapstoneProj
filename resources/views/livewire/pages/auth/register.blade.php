@@ -39,6 +39,15 @@ new #[Layout('layouts.guest')] class extends Component
 
         session()->put('pending_registration', $pendingRegistration);
 
+        $otpService->issueCode(
+            purpose: 'register',
+            channel: 'email',
+            recipient: $pendingRegistration['email'],
+            context: ['stage' => 'registration'],
+        );
+
+        session()->flash('status', 'verification-code-sent');
+
         $this->redirect(route('register.verify-otp', absolute: false), navigate: false);
     }
 }; ?>
