@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\OtpService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -63,3 +64,24 @@ Artisan::command('mail:test {to}', function (string $to) {
         return self::FAILURE;
     }
 })->purpose('Send a test email using the configured mailer');
+
+Artisan::command('otp:test {email}', function (string $email, OtpService $otpService) {
+    try {
+        $result = $otpService->issueCode(
+            purpose: 'register',
+            channel: 'email',
+            recipient: $email,
+            context: ['stage' => 'registration-test'],
+        );
+
+        $this->info('OTP issued successfully.');
+        $this->line('Challenge ID: ' . $result['challenge_id']);
+        $this->line('Expires in: ' . $result['expires_in'] . ' minutes');
+
+        return self::SUCCESS;
+    } catch (Throwable $exception) {
+        $this->error('OTP test failed: ' . $exception->getMessage());
+
+        return self::FAILURE;
+    }
+})->purpose('Test the registration OTP issuance flow');
