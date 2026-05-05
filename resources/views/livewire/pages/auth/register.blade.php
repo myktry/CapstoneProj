@@ -121,18 +121,22 @@ new #[Layout('layouts.guest')] class extends Component
                     busy = true;
                     try {
                         const name = (document.getElementById('name')?.value || '').trim();
-                        if (!name) { busy = false; return; }
-                        const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
-                        const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
-                        const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
-                        const input = document.getElementById('name-stego-png-base64');
-                        if (input) {
-                            input.value = pngBase64;
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        if (name && window.StegoDemo) {
+                            try {
+                                const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
+                                const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
+                                const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
+                                const input = document.getElementById('name-stego-png-base64');
+                                if (input) {
+                                    input.value = pngBase64;
+                                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
+                            } catch (error) {
+                                console.warn('Stego payload generation failed; continuing registration without it.', error);
+                            }
                         }
-
-                        document.getElementById('registration-form')?.requestSubmit();
                     } finally {
+                        document.getElementById('registration-form')?.requestSubmit();
                         busy = false;
                     }
                 "
