@@ -18,6 +18,7 @@ use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContr
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use App\Observers\GalleryItemServiceObserver;
 
@@ -37,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
+
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();
             $adminId = (string) ($request->user()?->id ?? 'guest');
