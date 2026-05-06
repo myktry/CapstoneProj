@@ -7,6 +7,7 @@ use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\BookingScheduleWidget;
 use App\Filament\Widgets\ContactInformationWidget;
 use App\Filament\Widgets\RecentActivityWidget;
+use App\Models\User;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -75,6 +76,24 @@ class AdminPanelProvider extends PanelProvider
                         });
                     </script>
                 HTML),
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+                function (): HtmlString {
+                    if (User::query()->where('role', 'admin')->exists()) {
+                        return new HtmlString('');
+                    }
+
+                    return new HtmlString(<<<'HTML'
+                        <div class="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+                            <p class="font-semibold text-amber-300">No admin account exists yet.</p>
+                            <p class="mt-1 text-amber-100/80">Create the first admin from the bootstrap page, then this action disappears.</p>
+                            <a href="/admin/bootstrap" class="mt-4 inline-flex items-center rounded-md bg-amber-400 px-4 py-2 font-semibold text-zinc-900 hover:bg-amber-300">
+                                Create First Admin
+                            </a>
+                        </div>
+                    HTML);
+                }
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

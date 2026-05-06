@@ -29,14 +29,6 @@
                             >
                                 Open Admin Dashboard
                             </a>
-                        @elseif ($adminCount === 0)
-                            <p class="mt-2 text-sm text-gray-600">No admin account exists yet. Bootstrap the first admin here, then this form will hide itself.</p>
-                            <a
-                                href="{{ route('admin.bootstrap') }}"
-                                class="mt-4 inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-                            >
-                                Open Admin Bootstrap
-                            </a>
                         @else
                             <p class="mt-2 text-sm text-gray-600">Your account is not marked as admin yet.</p>
                             <p class="mt-1 text-sm text-gray-500">Use <span class="font-mono">php artisan admin:user</span> to create or update an admin account.</p>
