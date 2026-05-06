@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Auth\Responses\LogoutResponse;
 use App\Models\Appointment;
 use App\Models\ClosedDate;
@@ -20,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 use App\Observers\GalleryItemServiceObserver;
 
 class AppServiceProvider extends ServiceProvider
@@ -41,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+
+        Livewire::component('app.filament.pages.auth.admin-login', AdminLogin::class);
 
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();
