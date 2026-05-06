@@ -169,7 +169,8 @@ Route::middleware('auth')->group(function () {
 
 		return view('admin.bootstrap');
 	})->name('admin.bootstrap');
-});
+
+	});
 
 require __DIR__.'/auth.php';
 

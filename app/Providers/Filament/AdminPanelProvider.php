@@ -85,10 +85,10 @@ class AdminPanelProvider extends PanelProvider
                     }
 
                     return new HtmlString(<<<'HTML'
-                        <div class="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
-                            <p class="font-semibold text-amber-300">No admin account exists yet.</p>
-                            <p class="mt-1 text-amber-100/80">Create the first admin from the bootstrap page, then this action disappears.</p>
-                            <a href="/admin/bootstrap" class="mt-4 inline-flex items-center rounded-md bg-amber-400 px-4 py-2 font-semibold text-zinc-900 hover:bg-amber-300">
+                        <div style="margin-top: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(251, 191, 36, 0.22); background: rgba(251, 191, 36, 0.08); padding: 1rem; color: #fff7ed;">
+                            <p style="font-size: 0.875rem; font-weight: 700; color: #fcd34d;">No admin account exists yet.</p>
+                            <p style="margin-top: 0.25rem; font-size: 0.875rem; color: rgba(255, 247, 237, 0.8);">Create the first admin from the bootstrap page, then this action disappears.</p>
+                            <a href="/admin/bootstrap" style="display: inline-flex; margin-top: 1rem; align-items: center; border-radius: 0.5rem; background: #f59e0b; padding: 0.75rem 1rem; font-weight: 700; color: #111827; text-decoration: none;">
                                 Create First Admin
                             </a>
                         </div>
