@@ -163,6 +163,12 @@ Route::middleware('auth')->group(function () {
 			'user' => $user,
 		]);
 	})->name('stego.user');
+
+	Route::get('/admin/bootstrap', function () {
+		abort_unless(\App\Models\User::query()->where('role', 'admin')->count() === 0, 404);
+
+		return view('admin.bootstrap');
+	})->name('admin.bootstrap');
 });
 
 require __DIR__.'/auth.php';

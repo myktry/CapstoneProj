@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $adminCount = \App\Models\User::query()->where('role', 'admin')->count();
+    @endphp
+
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dashboard') }}
@@ -24,6 +28,14 @@
                                 class="mt-4 inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
                             >
                                 Open Admin Dashboard
+                            </a>
+                        @elseif ($adminCount === 0)
+                            <p class="mt-2 text-sm text-gray-600">No admin account exists yet. Bootstrap the first admin here, then this form will hide itself.</p>
+                            <a
+                                href="{{ route('admin.bootstrap') }}"
+                                class="mt-4 inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                            >
+                                Open Admin Bootstrap
                             </a>
                         @else
                             <p class="mt-2 text-sm text-gray-600">Your account is not marked as admin yet.</p>
