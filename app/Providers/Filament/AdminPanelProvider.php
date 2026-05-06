@@ -33,6 +33,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(AdminLogin::class)
+            ->livewireComponents([
+                AdminLogin::class,
+            ])
             ->brandName('Black Ember Admin')
             ->colors([
                 'primary' => Color::Amber,
