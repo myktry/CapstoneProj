@@ -88,7 +88,7 @@ class AdminPanelProvider extends PanelProvider
                         <div style="margin-top: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(251, 191, 36, 0.22); background: rgba(251, 191, 36, 0.08); padding: 1rem; color: #fff7ed;">
                             <p style="font-size: 0.875rem; font-weight: 700; color: #fcd34d;">No admin account exists yet.</p>
                             <p style="margin-top: 0.25rem; font-size: 0.875rem; color: rgba(255, 247, 237, 0.8);">Create the first admin from the bootstrap page, then this action disappears.</p>
-                            <a href="/admin/bootstrap" style="display: inline-flex; margin-top: 1rem; align-items: center; border-radius: 0.5rem; background: #f59e0b; padding: 0.75rem 1rem; font-weight: 700; color: #111827; text-decoration: none;">
+                            <a href="{{ route('admin.bootstrap') }}" style="display: inline-flex; margin-top: 1rem; align-items: center; border-radius: 0.5rem; background: #f59e0b; padding: 0.75rem 1rem; font-weight: 700; color: #111827; text-decoration: none;">
                                 Create First Admin
                             </a>
                         </div>
