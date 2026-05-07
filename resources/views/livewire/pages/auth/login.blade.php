@@ -17,6 +17,12 @@ new #[Layout('layouts.guest')] class extends Component
 
         $user = $this->form->validateCredentials();
 
+        if (! $user->isAdmin()) {
+            $this->addError('form.email', 'This account does not have admin access.');
+
+            return;
+        }
+
         session()->put('pending_login_mfa', [
             'user_id' => (int) $user->id,
             'remember' => (bool) $this->form->remember,
