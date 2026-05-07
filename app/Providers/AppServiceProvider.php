@@ -10,6 +10,10 @@ use App\Models\ContactSetting;
 use App\Models\GalleryItem;
 use App\Models\SecurityAuditLog;
 use App\Models\Service;
+use App\Filament\Widgets\AdminOverview;
+use App\Filament\Widgets\BookingScheduleWidget;
+use App\Filament\Widgets\ContactInformationWidget;
+use App\Filament\Widgets\RecentActivityWidget;
 use App\Observers\ModelActivityObserver;
 use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
@@ -49,6 +53,10 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.filament.pages.auth.admin-login', AdminLogin::class);
         Livewire::component('filament.livewire.notifications', FilamentNotifications::class);
         Livewire::component('filament.livewire.database-notifications', FilamentDatabaseNotifications::class);
+        Livewire::component('app.filament.widgets.admin-overview', AdminOverview::class);
+        Livewire::component('app.filament.widgets.recent-activity-widget', RecentActivityWidget::class);
+        Livewire::component('app.filament.widgets.contact-information-widget', ContactInformationWidget::class);
+        Livewire::component('app.filament.widgets.booking-schedule-widget', BookingScheduleWidget::class);
 
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();
