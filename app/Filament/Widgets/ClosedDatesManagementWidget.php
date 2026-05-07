@@ -5,11 +5,10 @@ namespace App\Filament\Widgets;
 use App\Models\ClosedDate;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
-use Illuminate\View\View;
 
 class ClosedDatesManagementWidget extends Widget
 {
-    protected static string $view = 'filament.widgets.closed-dates-management-widget';
+    protected string $view = 'filament.widgets.closed-dates-management-widget';
 
     public int $currentMonth;
 
