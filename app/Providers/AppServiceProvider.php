@@ -15,6 +15,8 @@ use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
 use App\Services\Sms\TextBeeSmsSender;
 use App\Services\Sms\VonageSmsSender;
+use Filament\Livewire\DatabaseNotifications as FilamentDatabaseNotifications;
+use Filament\Livewire\Notifications as FilamentNotifications;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -45,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Livewire::component('app.filament.pages.auth.admin-login', AdminLogin::class);
+        Livewire::component('filament.livewire.notifications', FilamentNotifications::class);
+        Livewire::component('filament.livewire.database-notifications', FilamentDatabaseNotifications::class);
 
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();
