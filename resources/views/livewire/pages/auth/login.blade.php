@@ -13,24 +13,39 @@ new #[Layout('layouts.guest')] class extends Component
      */
     public function login(): void
     {
-        $this->validate();
+        try {
+            $this->validate();
 
-        $user = $this->form->validateCredentials();
+            $user = $this->form->validateCredentials();
 
-        if (! $user->isAdmin()) {
-            $this->addError('form.email', 'This account does not have admin access.');
+            if (! $user->isAdmin()) {
+                $this->addError('form.email', 'This account does not have admin access.');
+                return;
+            }
 
-            return;
+            $sessionData = [
+                'user_id' => (int) $user->id,
+                'remember' => (bool) $this->form->remember,
+            ];
+            
+            session()->put('pending_login_mfa', $sessionData);
+            session()->flash('status', 'mfa-required');
+            
+            \Log::info('Admin login redirect attempt', [
+                'email' => $this->form->email,
+                'user_id' => $user->id,
+                'session_data' => $sessionData,
+            ]);
+
+            $this->redirect(route('login.mfa-challenge', absolute: false), navigate: false);
+        } catch (\Exception $e) {
+            \Log::error('Admin login error', [
+                'email' => $this->form->email,
+                'error' => $e->getMessage(),
+                'exception' => class_basename($e),
+            ]);
+            throw $e;
         }
-
-        session()->put('pending_login_mfa', [
-            'user_id' => (int) $user->id,
-            'remember' => (bool) $this->form->remember,
-        ]);
-
-        session()->flash('status', 'mfa-required');
-
-        $this->redirect(route('login.mfa-challenge', absolute: false), navigate: false);
     }
 }; ?>
 
