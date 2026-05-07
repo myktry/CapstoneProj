@@ -3,9 +3,11 @@
 namespace App\Filament\Widgets;
 
 use App\Models\ActivityLog;
+use App\Models\User;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Throwable;
 
 class RecentActivityWidget extends TableWidget
 {
@@ -21,10 +23,16 @@ class RecentActivityWidget extends TableWidget
 
     public function table(Table $table): Table
     {
+        try {
+            $query = ActivityLog::query()->latest();
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            $query = User::query()->whereRaw('1 = 0');
+        }
+
         return $table
-            ->query(
-                ActivityLog::query()->latest()
-            )
+            ->query($query)
             ->columns([
                 TextColumn::make('action')
                     ->badge()

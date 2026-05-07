@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Schema as DatabaseSchema;
+use Throwable;
 
 class BookingScheduleWidget extends Widget implements HasForms
 {
@@ -30,7 +31,15 @@ class BookingScheduleWidget extends Widget implements HasForms
 
     public function mount(): void
     {
-        $contact = ContactSetting::query()->first();
+        try {
+            $contact = ContactSetting::query()->first();
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            $this->form->fill($this->defaultScheduleData());
+
+            return;
+        }
 
         if (! $contact) {
             $this->form->fill($this->defaultScheduleData());
@@ -79,22 +88,56 @@ class BookingScheduleWidget extends Widget implements HasForms
 
     public function save(): void
     {
-        $data = $this->form->getState();
+        try {
+            $data = $this->form->getState();
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            Notification::make()
+                ->title('Unable to load booking schedule')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $data = array_intersect_key($data, array_flip(array_filter(array_keys($data), fn (string $column): bool => DatabaseSchema::hasColumn('contact_settings', $column))));
 
         $contact = ContactSetting::query()->orderBy('id')->first();
 
         if (! $contact) {
-            ContactSetting::query()->create(array_merge([
-                'location_line_1' => '123 Ember Street',
-                'location_line_2' => 'Downtown, PH 1000',
-                'hours_line_1' => 'Mon - Sat: 10 AM - 8 PM',
-                'hours_line_2' => 'Sun: 12 PM - 6 PM',
-                'phone' => '+63 900 000 0000',
-                'email' => 'hello@blackember.com',
-            ], $data));
+            try {
+                ContactSetting::query()->create(array_merge([
+                    'location_line_1' => '123 Ember Street',
+                    'location_line_2' => 'Downtown, PH 1000',
+                    'hours_line_1' => 'Mon - Sat: 10 AM - 8 PM',
+                    'hours_line_2' => 'Sun: 12 PM - 6 PM',
+                    'phone' => '+63 900 000 0000',
+                    'email' => 'hello@blackember.com',
+                ], $data));
+            } catch (Throwable $throwable) {
+                report($throwable);
+
+                Notification::make()
+                    ->title('Unable to save booking schedule')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
         } else {
-            $contact->update($data);
+            try {
+                $contact->update($data);
+            } catch (Throwable $throwable) {
+                report($throwable);
+
+                Notification::make()
+                    ->title('Unable to save booking schedule')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
         }
 
         Notification::make()
