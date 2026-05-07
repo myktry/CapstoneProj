@@ -42,17 +42,21 @@ class ModelActivityObserver
 
     private function log(string $action, Model $model, array $changes = []): void
     {
-        $label  = $this->getLabel($model);
-        $name   = str(class_basename($model))->snake(' ')->title();
+        try {
+            $label = $this->getLabel($model);
+            $name = str(class_basename($model))->snake(' ')->title();
 
-        ActivityLog::create([
-            'user_id'    => auth()->id(),
-            'action'     => $action,
-            'model_type' => get_class($model),
-            'model_id'   => $model->getKey(),
-            'description'=> "{$name} \"{$label}\" was {$action}",
-            'changes'    => empty($changes) ? null : $changes,
-        ]);
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => $action,
+                'model_type' => get_class($model),
+                'model_id' => $model->getKey(),
+                'description' => "{$name} \"{$label}\" was {$action}",
+                'changes' => empty($changes) ? null : $changes,
+            ]);
+        } catch (\Throwable $throwable) {
+            report($throwable);
+        }
     }
 
     private function getLabel(Model $model): string

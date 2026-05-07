@@ -9,21 +9,33 @@ class GalleryItemServiceObserver
 {
     public function created(GalleryItem $galleryItem): void
     {
-        $this->syncService($galleryItem);
+        try {
+            $this->syncService($galleryItem);
+        } catch (\Throwable $throwable) {
+            report($throwable);
+        }
     }
 
     public function updated(GalleryItem $galleryItem): void
     {
-        $this->syncService($galleryItem);
+        try {
+            $this->syncService($galleryItem);
+        } catch (\Throwable $throwable) {
+            report($throwable);
+        }
     }
 
     public function deleted(GalleryItem $galleryItem): void
     {
-        Service::query()
-            ->where('gallery_item_id', $galleryItem->id)
-            ->get()
-            ->each
-            ->delete();
+        try {
+            Service::query()
+                ->where('gallery_item_id', $galleryItem->id)
+                ->get()
+                ->each
+                ->delete();
+        } catch (\Throwable $throwable) {
+            report($throwable);
+        }
     }
 
     private function syncService(GalleryItem $galleryItem): void
