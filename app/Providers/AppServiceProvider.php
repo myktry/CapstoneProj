@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
 use App\Observers\GalleryItemServiceObserver;
 
 class AppServiceProvider extends ServiceProvider
@@ -59,6 +60,12 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.filament.widgets.contact-information-widget', ContactInformationWidget::class);
         Livewire::component('app.filament.widgets.booking-schedule-widget', BookingScheduleWidget::class);
         Livewire::component('app.filament.widgets.closed-dates-management-widget', ClosedDatesManagementWidget::class);
+
+        // Ensure Livewire temp directory exists to avoid upload failures when directory is missing in production.
+        $livewireTmp = storage_path('framework/livewire-tmp');
+        if (! File::exists($livewireTmp)) {
+            File::makeDirectory($livewireTmp, 0755, true);
+        }
 
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();
