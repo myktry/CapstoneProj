@@ -86,7 +86,7 @@ new #[Layout('layouts.guest')] class extends Component
         </div>
 
         <div class="pt-2 flex items-center justify-between gap-3">
-            <a class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300 focus:outline-none" href="{{ route('admin.login') }}" wire:navigate>
+            <a class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300 focus:outline-none" href="{{ route('filament.admin.auth.login') }}" wire:navigate>
                 {{ __('Back to admin login') }}
             </a>
 
