@@ -20,8 +20,6 @@ class ClosedDatesManagementWidget extends Widget
 
     public ?string $note = null;
 
-    public bool $showModal = false;
-
     public function mount(): void
     {
         $now = now();
@@ -45,15 +43,16 @@ class ClosedDatesManagementWidget extends Widget
 
     public function openModal(): void
     {
-        $this->showModal = true;
+        $this->dispatch('open-modal', 'closed-dates-calendar');
     }
 
     public function closeModal(): void
     {
-        $this->showModal = false;
         $this->selectedDate = null;
         $this->selectedStatus = 'open';
         $this->note = null;
+
+        $this->dispatch('close-modal', 'closed-dates-calendar');
     }
 
     public function selectDate(string $date): void
