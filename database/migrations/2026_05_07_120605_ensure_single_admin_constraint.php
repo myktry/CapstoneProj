@@ -1,31 +1,37 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
-     * Creates a database-level constraint to ensure only one admin exists.
-     * Relies primarily on application-level validation in admin-register.blade.php
+     *
+     * Enforces a single admin account at the database level.
      */
     public function up(): void
     {
         $driver = DB::connection()->getDriverName();
 
-        if ($driver === 'pgsql') {
-            // For PostgreSQL, create a partial unique index
-            // This ensures only one row can have role = 'admin'
-            DB::statement(
-                "CREATE UNIQUE INDEX IF NOT EXISTS unique_admin_role ON users(role) WHERE role = 'admin'"
-            );
+        if ($driver === 'mysql') {
+            Schema::table('users', function (Blueprint $table) {
+                $table->unsignedTinyInteger('admin_guard')
+                    ->nullable()
+                    ->storedAs("case when role = 'admin' then 1 else null end")
+                    ->after('role');
+            });
+
+            DB::statement('ALTER TABLE users ADD UNIQUE INDEX unique_admin_role (admin_guard)');
+
+            return;
         }
-        
-        // MySQL: Using application-level validation is sufficient
-        // SQLite: Using application-level validation is sufficient
-        // Both rely on the abort_if() checks in admin-register.blade.php and admin-bootstrap.blade.php
+
+        if ($driver === 'pgsql') {
+            DB::statement("CREATE UNIQUE INDEX IF NOT EXISTS unique_admin_role ON users ((CASE WHEN role = 'admin' THEN 1 ELSE NULL END))");
+        }
     }
 
     /**
@@ -34,6 +40,15 @@ return new class extends Migration
     public function down(): void
     {
         $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropUnique('unique_admin_role');
+                $table->dropColumn('admin_guard');
+            });
+
+            return;
+        }
 
         if ($driver === 'pgsql') {
             DB::statement('DROP INDEX IF EXISTS unique_admin_role');
