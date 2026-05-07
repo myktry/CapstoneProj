@@ -12,6 +12,7 @@ use App\Models\SecurityAuditLog;
 use App\Models\Service;
 use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\BookingScheduleWidget;
+use App\Filament\Widgets\ClosedDatesManagementWidget;
 use App\Filament\Widgets\ContactInformationWidget;
 use App\Filament\Widgets\RecentActivityWidget;
 use App\Observers\ModelActivityObserver;
@@ -57,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.filament.widgets.recent-activity-widget', RecentActivityWidget::class);
         Livewire::component('app.filament.widgets.contact-information-widget', ContactInformationWidget::class);
         Livewire::component('app.filament.widgets.booking-schedule-widget', BookingScheduleWidget::class);
+        Livewire::component('app.filament.widgets.closed-dates-management-widget', ClosedDatesManagementWidget::class);
 
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();

@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\BookingScheduleWidget;
+use App\Filament\Widgets\ClosedDatesManagementWidget;
 use App\Filament\Widgets\ContactInformationWidget;
 use App\Filament\Widgets\RecentActivityWidget;
 use App\Models\User;
@@ -106,6 +107,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AdminOverview::class,
+                ClosedDatesManagementWidget::class,
                 RecentActivityWidget::class,
                 ContactInformationWidget::class,
                 BookingScheduleWidget::class,
