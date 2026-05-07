@@ -18,6 +18,9 @@ use App\Filament\Widgets\RecentActivityWidget;
 use App\Filament\Resources\GalleryItems\Pages\CreateGalleryItem;
 use App\Filament\Resources\GalleryItems\Pages\EditGalleryItem;
 use App\Filament\Resources\GalleryItems\Pages\ListGalleryItems;
+use App\Filament\Resources\Services\Pages\CreateService;
+use App\Filament\Resources\Services\Pages\EditService;
+use App\Filament\Resources\Services\Pages\ListServices;
 use App\Observers\ModelActivityObserver;
 use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
@@ -68,6 +71,9 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.filament.resources.gallery-items.pages.list-gallery-items', ListGalleryItems::class);
         Livewire::component('app.filament.resources.gallery-items.pages.create-gallery-item', CreateGalleryItem::class);
         Livewire::component('app.filament.resources.gallery-items.pages.edit-gallery-item', EditGalleryItem::class);
+        Livewire::component('app.filament.resources.services.pages.list-services', ListServices::class);
+        Livewire::component('app.filament.resources.services.pages.create-service', CreateService::class);
+        Livewire::component('app.filament.resources.services.pages.edit-service', EditService::class);
 
         // Ensure Livewire temp directory exists to avoid upload failures when directory is missing in production.
         $livewireTmp = storage_path('framework/livewire-tmp');
