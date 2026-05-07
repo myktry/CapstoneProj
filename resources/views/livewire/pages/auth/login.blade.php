@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Forms\LoginForm;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -13,39 +14,20 @@ new #[Layout('layouts.guest')] class extends Component
      */
     public function login(): void
     {
-        try {
-            $this->validate();
+        $this->validate();
 
-            $user = $this->form->validateCredentials();
+        $user = $this->form->validateCredentials();
 
-            if (! $user->isAdmin()) {
-                $this->addError('form.email', 'This account does not have admin access.');
-                return;
-            }
+        if ($user->isAdmin()) {
+            $this->addError('form.email', 'Admin accounts must sign in at /admin/login.');
 
-            $sessionData = [
-                'user_id' => (int) $user->id,
-                'remember' => (bool) $this->form->remember,
-            ];
-            
-            session()->put('pending_login_mfa', $sessionData);
-            session()->flash('status', 'mfa-required');
-            
-            \Log::info('Admin login redirect attempt', [
-                'email' => $this->form->email,
-                'user_id' => $user->id,
-                'session_data' => $sessionData,
-            ]);
-
-            $this->redirect(route('login.mfa-challenge', absolute: false), navigate: false);
-        } catch (\Exception $e) {
-            \Log::error('Admin login error', [
-                'email' => $this->form->email,
-                'error' => $e->getMessage(),
-                'exception' => class_basename($e),
-            ]);
-            throw $e;
+            return;
         }
+
+        Auth::login($user, (bool) $this->form->remember);
+        request()->session()->regenerate();
+
+        $this->redirect(route('dashboard', absolute: false), navigate: false);
     }
 }; ?>
 
