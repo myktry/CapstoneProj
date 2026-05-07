@@ -10,6 +10,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\Schema as DatabaseSchema;
 
 class BookingScheduleWidget extends Widget implements HasForms
 {
@@ -32,6 +33,12 @@ class BookingScheduleWidget extends Widget implements HasForms
         $contact = ContactSetting::query()->first();
 
         if (! $contact) {
+            $this->form->fill($this->defaultScheduleData());
+
+            return;
+        }
+
+        if (! $this->hasBookingScheduleColumns()) {
             $this->form->fill($this->defaultScheduleData());
 
             return;
@@ -73,6 +80,7 @@ class BookingScheduleWidget extends Widget implements HasForms
     public function save(): void
     {
         $data = $this->form->getState();
+        $data = array_intersect_key($data, array_flip(array_filter(array_keys($data), fn (string $column): bool => DatabaseSchema::hasColumn('contact_settings', $column))));
 
         $contact = ContactSetting::query()->orderBy('id')->first();
 
@@ -102,5 +110,12 @@ class BookingScheduleWidget extends Widget implements HasForms
             'booking_end_time' => '17:00',
             'booking_interval_minutes' => 60,
         ];
+    }
+
+    private function hasBookingScheduleColumns(): bool
+    {
+        return DatabaseSchema::hasColumn('contact_settings', 'booking_start_time')
+            && DatabaseSchema::hasColumn('contact_settings', 'booking_end_time')
+            && DatabaseSchema::hasColumn('contact_settings', 'booking_interval_minutes');
     }
 }
