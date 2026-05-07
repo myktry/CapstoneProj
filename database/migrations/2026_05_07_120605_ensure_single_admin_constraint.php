@@ -15,13 +15,17 @@ return new class extends Migration
         $driver = DB::connection()->getDriverName();
 
         // Add a unique constraint for admin role to ensure only one admin exists
-        // This uses a CASE/WHEN approach to make the constraint database-agnostic
         if ($driver === 'mysql') {
-            DB::statement(
-                "ALTER TABLE users ADD CONSTRAINT unique_admin_role UNIQUE (
-                    CASE WHEN role = 'admin' THEN 1 ELSE NULL END
-                )"
-            );
+            // For MySQL: Add a generated column that stores 1 only for admin role,
+            // then add a unique constraint on it. Since NULL values are not unique,
+            // this allows multiple non-admin users but only one admin.
+            Schema::table('users', function (Blueprint $table) {
+                $table->unsignedTinyInteger('is_admin_generated')->storedAs(
+                    "CASE WHEN role = 'admin' THEN 1 ELSE NULL END"
+                )->nullable()->after('role');
+            });
+
+            DB::statement('ALTER TABLE users ADD CONSTRAINT unique_admin_role UNIQUE (is_admin_generated)');
         } elseif ($driver === 'pgsql') {
             // For PostgreSQL, create a partial unique index
             DB::statement(
@@ -29,7 +33,7 @@ return new class extends Migration
             );
         } elseif ($driver === 'sqlite') {
             // SQLite doesn't support conditional unique constraints easily
-            // The application-level check will be sufficient
+            // The application-level check in admin-register.blade.php will be sufficient
         }
     }
 
@@ -43,6 +47,7 @@ return new class extends Migration
         if ($driver === 'mysql') {
             Schema::table('users', function (Blueprint $table) {
                 $table->dropUnique('unique_admin_role');
+                $table->dropColumn('is_admin_generated');
             });
         } elseif ($driver === 'pgsql') {
             DB::statement('DROP INDEX IF EXISTS unique_admin_role');
