@@ -80,21 +80,25 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 function (): HtmlString {
-                    if (User::query()->where('role', 'admin')->exists()) {
+                    try {
+                        if (User::query()->where('role', 'admin')->exists()) {
+                            return new HtmlString('');
+                        }
+
+                        $url = route('admin.register');
+
+                        return new HtmlString(<<<HTML
+                            <div style="margin-top: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(251, 191, 36, 0.22); background: rgba(251, 191, 36, 0.08); padding: 1rem; color: #fff7ed;">
+                                <p style="font-size: 0.875rem; font-weight: 700; color: #fcd34d;">No admin account exists yet.</p>
+                                <p style="margin-top: 0.25rem; font-size: 0.875rem; color: rgba(255, 247, 237, 0.8);">Set up your admin account to start managing the platform.</p>
+                                <a href="{$url}" style="display: inline-flex; margin-top: 1rem; align-items: center; border-radius: 0.5rem; background: #f59e0b; padding: 0.75rem 1rem; font-weight: 700; color: #111827; text-decoration: none;">
+                                    Create Admin Account
+                                </a>
+                            </div>
+                        HTML);
+                    } catch (\Exception $e) {
                         return new HtmlString('');
                     }
-
-                    $url = route('admin.register');
-
-                    return new HtmlString(<<<HTML
-                        <div style="margin-top: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(251, 191, 36, 0.22); background: rgba(251, 191, 36, 0.08); padding: 1rem; color: #fff7ed;">
-                            <p style="font-size: 0.875rem; font-weight: 700; color: #fcd34d;">No admin account exists yet.</p>
-                            <p style="margin-top: 0.25rem; font-size: 0.875rem; color: rgba(255, 247, 237, 0.8);">Set up your admin account to start managing the platform.</p>
-                            <a href="{$url}" style="display: inline-flex; margin-top: 1rem; align-items: center; border-radius: 0.5rem; background: #f59e0b; padding: 0.75rem 1rem; font-weight: 700; color: #111827; text-decoration: none;">
-                                Create Admin Account
-                            </a>
-                        </div>
-                    HTML);
                 }
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
