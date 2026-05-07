@@ -15,6 +15,9 @@ use App\Filament\Widgets\BookingScheduleWidget;
 use App\Filament\Widgets\ClosedDatesManagementWidget;
 use App\Filament\Widgets\ContactInformationWidget;
 use App\Filament\Widgets\RecentActivityWidget;
+use App\Filament\Resources\GalleryItems\Pages\CreateGalleryItem;
+use App\Filament\Resources\GalleryItems\Pages\EditGalleryItem;
+use App\Filament\Resources\GalleryItems\Pages\ListGalleryItems;
 use App\Observers\ModelActivityObserver;
 use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
@@ -60,6 +63,11 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.filament.widgets.contact-information-widget', ContactInformationWidget::class);
         Livewire::component('app.filament.widgets.booking-schedule-widget', BookingScheduleWidget::class);
         Livewire::component('app.filament.widgets.closed-dates-management-widget', ClosedDatesManagementWidget::class);
+        
+        // Register Filament Resource pages as Livewire components for production auto-discovery
+        Livewire::component('app.filament.resources.gallery-items.pages.list-gallery-items', ListGalleryItems::class);
+        Livewire::component('app.filament.resources.gallery-items.pages.create-gallery-item', CreateGalleryItem::class);
+        Livewire::component('app.filament.resources.gallery-items.pages.edit-gallery-item', EditGalleryItem::class);
 
         // Ensure Livewire temp directory exists to avoid upload failures when directory is missing in production.
         $livewireTmp = storage_path('framework/livewire-tmp');
