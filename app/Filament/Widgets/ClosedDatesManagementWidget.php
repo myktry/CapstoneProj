@@ -10,9 +10,9 @@ class ClosedDatesManagementWidget extends Widget
 {
     protected string $view = 'filament.widgets.closed-dates-management-widget';
 
-    public int $currentMonth;
+    public ?int $currentMonth = null;
 
-    public int $currentYear;
+    public ?int $currentYear = null;
 
     public ?string $selectedDate = null;
 
@@ -22,13 +22,13 @@ class ClosedDatesManagementWidget extends Widget
 
     public function mount(): void
     {
-        $now = now();
-        $this->currentMonth = $now->month;
-        $this->currentYear = $now->year;
+        $this->initializeCalendarState();
     }
 
     public function previousMonth(): void
     {
+        $this->initializeCalendarState();
+
         $date = Carbon::create($this->currentYear, $this->currentMonth, 1)->subMonth();
         $this->currentMonth = $date->month;
         $this->currentYear = $date->year;
@@ -36,6 +36,8 @@ class ClosedDatesManagementWidget extends Widget
 
     public function nextMonth(): void
     {
+        $this->initializeCalendarState();
+
         $date = Carbon::create($this->currentYear, $this->currentMonth, 1)->addMonth();
         $this->currentMonth = $date->month;
         $this->currentYear = $date->year;
@@ -57,6 +59,8 @@ class ClosedDatesManagementWidget extends Widget
 
     public function selectDate(string $date): void
     {
+        $this->initializeCalendarState();
+
         $this->selectedDate = $date;
 
         $closedDate = ClosedDate::query()
@@ -76,6 +80,8 @@ class ClosedDatesManagementWidget extends Widget
 
     public function saveDateStatus(): void
     {
+        $this->initializeCalendarState();
+
         if (!$this->selectedDate) {
             return;
         }
@@ -109,6 +115,8 @@ class ClosedDatesManagementWidget extends Widget
 
     public function getCalendarDaysProperty(): array
     {
+        $this->initializeCalendarState();
+
         $firstDay = Carbon::create($this->currentYear, $this->currentMonth, 1);
         $lastDay = $firstDay->copy()->endOfMonth();
 
@@ -145,6 +153,20 @@ class ClosedDatesManagementWidget extends Widget
 
     public function getMonthYearProperty(): string
     {
+        $this->initializeCalendarState();
+
         return Carbon::create($this->currentYear, $this->currentMonth, 1)->format('F Y');
+    }
+
+    protected function initializeCalendarState(): void
+    {
+        if ($this->currentMonth !== null && $this->currentYear !== null) {
+            return;
+        }
+
+        $now = now();
+
+        $this->currentMonth ??= $now->month;
+        $this->currentYear ??= $now->year;
     }
 }
