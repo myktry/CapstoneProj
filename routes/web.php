@@ -56,9 +56,8 @@ Route::get('/featured-styles', function () {
 			->get()
 			->map(fn ($item) => [
 				'name' => $item->name,
-				'image' => $item->image
-					? (str_starts_with($item->image, 'http') ? $item->image : Storage::disk('public')->url($item->image))
-					: 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
+				'image' => $item->image_url
+					?? 'https://images.unsplash.com/photo-1503951458645-643d53bfd90f?q=80&w=1200&auto=format&fit=crop',
 				'description' => $item->description ?: 'Premium grooming style showcase.',
 			])->values();
 	});
