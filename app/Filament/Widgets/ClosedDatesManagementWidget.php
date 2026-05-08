@@ -10,6 +10,8 @@ class ClosedDatesManagementWidget extends Widget
 {
     protected string $view = 'filament.widgets.closed-dates-management-widget';
 
+    protected int|string|array $columnSpan = 'full';
+
     public ?int $currentMonth = null;
 
     public ?int $currentYear = null;
