@@ -23,35 +23,46 @@ class CheckoutController extends Controller
         }
 
         $service = Service::findOrFail($data['service_id']);
+        $amount = (int) round($service->price * 100);
+
+        if ($amount < 3000) {
+            return redirect()->route('home')->with('error', 'This service is below Stripe Checkout’s minimum supported amount. Please choose a higher-priced service or contact us for manual payment.');
+        }
 
         Stripe::setApiKey(config('services.stripe.secret'));
 
-        $session = StripeSession::create([
-            'payment_method_types' => ['card'],
-            'mode'                 => 'payment',
-            'line_items'           => [
-                [
-                    'price_data' => [
-                        'currency'     => 'php',
-                        'unit_amount'  => (int) ($service->price * 100), // convert to centavos
-                        'product_data' => [
-                            'name'        => $service->name,
-                            'description' => 'Appointment on ' . $data['appointment_date'] . ' at ' . $data['appointment_time'],
+        try {
+            $session = StripeSession::create([
+                'payment_method_types' => ['card'],
+                'mode'                 => 'payment',
+                'line_items'           => [
+                    [
+                        'price_data' => [
+                            'currency'     => 'php',
+                            'unit_amount'  => $amount,
+                            'product_data' => [
+                                'name'        => $service->name,
+                                'description' => 'Appointment on ' . $data['appointment_date'] . ' at ' . $data['appointment_time'],
+                            ],
                         ],
+                        'quantity' => 1,
                     ],
-                    'quantity' => 1,
                 ],
-            ],
-            'metadata'       => [
-                'user_id'          => $data['user_id'] ?? '',
-                'service_id'       => $data['service_id'],
-                'appointment_date' => $data['appointment_date'],
-                'appointment_time' => $data['appointment_time'],
-                'customer_phone'   => $data['customer_phone'],
-            ],
-            'success_url' => route('booking.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url'  => route('booking.cancel'),
-        ]);
+                'metadata'       => [
+                    'user_id'          => $data['user_id'] ?? '',
+                    'service_id'       => $data['service_id'],
+                    'appointment_date' => $data['appointment_date'],
+                    'appointment_time' => $data['appointment_time'],
+                    'customer_phone'   => $data['customer_phone'],
+                ],
+                'success_url' => route('booking.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url'  => route('booking.cancel'),
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('home')->with('error', 'Stripe could not create a checkout session for this service. Please try again or contact us for manual payment.');
+        }
 
         // Stripe metadata values are size-limited; store the stego payload server-side.
         Cache::put('booking:'.$session->id, [

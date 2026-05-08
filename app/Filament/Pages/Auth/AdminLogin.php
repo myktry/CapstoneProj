@@ -9,10 +9,8 @@ class AdminLogin extends Login
 {
     public function getSubheading(): string | Htmlable | null
     {
-        if (filled($this->userUndertakingMultiFactorAuthentication)) {
-            return parent::getSubheading();
-        }
-
-        return 'Admin-only area. MFA challenge setup placeholder: connect your preferred provider (TOTP/SMS) before production launch.';
+        return filled($this->userUndertakingMultiFactorAuthentication)
+            ? parent::getSubheading()
+            : 'Admin access uses email OTP verification after password sign-in.';
     }
 }

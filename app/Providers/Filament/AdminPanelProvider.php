@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\MultiFactor\AdminEmailOtpAuthentication;
 use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\BookingScheduleWidget;
@@ -35,6 +36,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(AdminLogin::class)
+            ->multiFactorAuthentication([
+                AdminEmailOtpAuthentication::make(),
+            ])
             ->brandName('Black Ember Admin')
             ->colors([
                 'primary' => Color::Amber,

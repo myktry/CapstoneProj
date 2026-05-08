@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\User;
+use App\Services\OtpService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -21,7 +23,7 @@ new #[Layout('layouts.guest')] class extends Component
         abort_if(User::query()->where('role', 'admin')->exists(), 403, 'An admin account already exists.');
     }
 
-    public function registerAdmin(): void
+    public function registerAdmin(OtpService $otpService): void
     {
         // Double-check that no admin exists
         abort_if(User::query()->where('role', 'admin')->exists(), 403, 'An admin account already exists.');
@@ -33,19 +35,40 @@ new #[Layout('layouts.guest')] class extends Component
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $admin = User::query()->create([
+        $pendingAdmin = [
             'name' => trim($validated['name']),
             'email' => strtolower(trim($validated['email'])),
             'phone' => trim($validated['phone']),
             'password' => Hash::make($validated['password']),
             'role' => 'admin',
-            'email_verified_at' => now(),
-        ]);
+        ];
 
-        Auth::login($admin);
-        session()->regenerate();
+        session()->put('pending_admin_registration', $pendingAdmin);
 
-        $this->redirect('/admin', navigate: false);
+        try {
+            $otpService->issueCode(
+                purpose: 'admin_register',
+                channel: 'email',
+                recipient: $pendingAdmin['email'],
+                context: ['stage' => 'admin-registration'],
+            );
+        } catch (ValidationException $exception) {
+            session()->flash('status', 'verification-code-sent');
+            $this->redirect(route('admin.register.verify-otp', absolute: false), navigate: false);
+
+            return;
+        } catch (\Throwable $throwable) {
+            report($throwable);
+            session()->forget('pending_admin_registration');
+
+            $this->addError('email', 'Unable to send the verification code right now. Please try again.');
+
+            return;
+        }
+
+        session()->flash('status', 'verification-code-sent');
+
+        $this->redirect(route('admin.register.verify-otp', absolute: false), navigate: false);
     }
 }; ?>
 
@@ -54,6 +77,7 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Create Admin</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Admin Registration</h1>
         <p class="mt-2 text-sm text-zinc-400">Create the administrator account for Black Ember.</p>
+        <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP to your email address to complete registration.</p>
         <p class="mt-2 text-sm text-amber-200">Only one admin account can exist in the system. Once created, this form will no longer be accessible.</p>
     </div>
 

@@ -11,6 +11,9 @@ Route::middleware('guest')->group(function () {
     Volt::route('admin/register', 'pages.auth.admin-register')
         ->name('admin.register');
 
+    Volt::route('admin/register/verify-otp', 'pages.auth.admin-register-verify-otp')
+        ->name('admin.register.verify-otp');
+
     Volt::route('register', 'pages.auth.register')
         ->name('register');
 

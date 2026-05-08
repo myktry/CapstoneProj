@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\User;
+use App\Services\OtpService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -20,7 +22,7 @@ new #[Layout('layouts.guest')] class extends Component
         abort_if(User::query()->where('role', 'admin')->exists(), 404);
     }
 
-    public function createAdmin(): void
+    public function createAdmin(OtpService $otpService): void
     {
         abort_if(User::query()->where('role', 'admin')->exists(), 404);
 
@@ -31,19 +33,40 @@ new #[Layout('layouts.guest')] class extends Component
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $admin = User::query()->create([
+        $pendingAdmin = [
             'name' => trim($validated['name']),
             'email' => strtolower(trim($validated['email'])),
             'phone' => trim($validated['phone']),
             'password' => Hash::make($validated['password']),
             'role' => 'admin',
-            'email_verified_at' => now(),
-        ]);
+        ];
 
-        Auth::login($admin);
-        session()->regenerate();
+        session()->put('pending_admin_registration', $pendingAdmin);
 
-        $this->redirect('/admin', navigate: false);
+        try {
+            $otpService->issueCode(
+                purpose: 'admin_register',
+                channel: 'email',
+                recipient: $pendingAdmin['email'],
+                context: ['stage' => 'admin-bootstrap'],
+            );
+        } catch (ValidationException $exception) {
+            session()->flash('status', 'verification-code-sent');
+            $this->redirect(route('admin.register.verify-otp', absolute: false), navigate: false);
+
+            return;
+        } catch (\Throwable $throwable) {
+            report($throwable);
+            session()->forget('pending_admin_registration');
+
+            $this->addError('email', 'Unable to send the verification code right now. Please try again.');
+
+            return;
+        }
+
+        session()->flash('status', 'verification-code-sent');
+
+        $this->redirect(route('admin.register.verify-otp', absolute: false), navigate: false);
     }
 }; ?>
 
@@ -52,6 +75,7 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Create Admin</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Bootstrap First Admin</h1>
         <p class="mt-2 text-sm text-zinc-400">This form is only available until the first admin account is created.</p>
+        <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP to your email address to finish setup.</p>
     </div>
 
     <form wire:submit.prevent="createAdmin" class="space-y-4">
