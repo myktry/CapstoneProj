@@ -137,6 +137,9 @@ class ClosedDatesManagementWidget extends Widget
             ->pluck('date')
             ->toArray();
 
+        // Normalize any datetime strings to date-only (YYYY-MM-DD) so comparisons match
+        $closedDates = array_map(fn ($d) => Carbon::parse($d)->toDateString(), $closedDates);
+
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $date = Carbon::create($this->currentYear, $this->currentMonth, $day);
             $dateString = $date->toDateString();
