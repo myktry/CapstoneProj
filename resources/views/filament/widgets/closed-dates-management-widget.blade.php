@@ -11,44 +11,15 @@
                         <h2 class="mt-3 text-3xl font-bold text-white">Closed / Holiday Dates</h2>
                         <p class="mt-2 max-w-2xl text-sm text-zinc-400">Select a date, assign its status, and leave a note so the booking calendar stays clear for customers.</p>
                     </div>
-
-                    <button
-                        type="button"
-                        wire:click="openModal"
-                        class="flex-shrink-0 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/20 hover:text-amber-200"
-                    >
-                        Open Calendar
-                    </button>
                 </div>
 
                 <div class="flex flex-wrap gap-2 text-xs font-medium text-zinc-300">
-                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">1. Open the calendar</span>
-                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">2. Pick a date</span>
-                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">3. Save reason + status</span>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">1. Pick a date</span>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">2. Choose status</span>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">3. Save the note</span>
                 </div>
             </div>
-
-        <x-modal name="closed-dates-calendar" maxWidth="2xl" focusable>
             <div class="bg-[#0a0a0a] px-6 py-6 sm:px-8 space-y-6">
-                <div class="flex items-center justify-between gap-4 border-b border-amber-500/10 pb-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.3em] text-amber-400">Calendar Setup</p>
-                        <h3 class="mt-3 text-2xl font-bold text-white">Block unavailable dates</h3>
-                        <p class="mt-2 text-sm text-zinc-400">Pick a day, set the status, and save a note for staff reference.</p>
-                    </div>
-
-                    <button
-                        type="button"
-                        wire:click="closeModal"
-                        class="rounded-full p-2 text-zinc-400 transition hover:bg-amber-500/20 hover:text-amber-400"
-                        aria-label="Close calendar"
-                    >
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
                 <div class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)]">
                     <div class="rounded-2xl border border-amber-500/20 bg-zinc-900/60 p-4 sm:p-5">
                         <div class="mb-4 flex items-center justify-between gap-3">
@@ -132,9 +103,9 @@
                         <div class="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
                             <p class="text-xs uppercase tracking-[0.3em] text-amber-400/70">Step-by-step</p>
                             <ol class="mt-3 space-y-3 text-sm text-zinc-300">
-                                <li class="flex gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-300">1</span><span>Open the calendar and pick a day from the grid.</span></li>
-                                <li class="flex gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-300">2</span><span>Choose if the date is closed, a holiday, or maintenance.</span></li>
-                                <li class="flex gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-300">3</span><span>Add a note, then save so staff see the blocked date.</span></li>
+                                <li class="flex gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-300">1</span><span>Pick a day directly from the calendar grid.</span></li>
+                                <li class="flex gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-300">2</span><span>Choose the status for that date.</span></li>
+                                <li class="flex gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-300">3</span><span>Add a note and save the blocked date.</span></li>
                             </ol>
                         </div>
 
@@ -185,7 +156,7 @@
                                         wire:click="closeModal"
                                         class="inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-2.5 text-sm font-semibold text-zinc-300 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
                                     >
-                                        Cancel
+                                        Reset
                                     </button>
                                 </div>
                             </div>
@@ -197,6 +168,4 @@
                     </div>
                 </div>
             </div>
-        </x-modal>
-    </x-filament::section>
 </x-filament-widgets::widget>
