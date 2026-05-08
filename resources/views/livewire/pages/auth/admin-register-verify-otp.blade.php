@@ -34,10 +34,13 @@ new #[Layout('layouts.guest')] class extends Component
             'otp' => ['required', 'digits:6'],
         ]);
 
+        $channel = $pending['otp_channel'] ?? 'email';
+        $recipient = $channel === 'sms' ? $pending['phone'] : $pending['email'];
+
         $isValid = $otpService->verifyCode(
             purpose: 'admin_register',
-            channel: 'email',
-            recipient: $pending['email'],
+            channel: $channel,
+            recipient: $recipient,
             code: $this->otp,
         );
 
@@ -85,9 +88,9 @@ new #[Layout('layouts.guest')] class extends Component
         try {
             $otpService->issueCode(
                 purpose: 'admin_register',
-                channel: 'email',
-                recipient: $pending['email'],
-                context: ['stage' => 'admin-registration-resend'],
+                channel: $pending['otp_channel'] ?? 'email',
+                recipient: ($pending['otp_channel'] ?? 'email') === 'sms' ? $pending['phone'] : $pending['email'],
+                context: ['stage' => 'admin-registration-resend', 'method' => $pending['otp_channel'] ?? 'email'],
             );
         } catch (\Throwable $throwable) {
             report($throwable);
@@ -105,7 +108,7 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="mb-6">
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Admin Verification</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Confirm Your Email Code</h1>
-        <p class="mt-2 text-sm text-zinc-400">We sent a 6-digit OTP to your email address to finish admin registration.</p>
+        <p class="mt-2 text-sm text-zinc-400">We sent a 6-digit OTP by email or SMS to finish admin registration.</p>
     </div>
 
     @if (session('status') === 'verification-code-sent')

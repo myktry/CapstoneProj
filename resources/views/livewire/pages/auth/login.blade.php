@@ -24,10 +24,13 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
-        Auth::login($user, (bool) $this->form->remember);
-        request()->session()->regenerate();
+        // Set pending MFA session to trigger challenge before actual login
+        session()->put('pending_login_mfa', [
+            'user_id' => $user->id,
+            'remember' => (bool) $this->form->remember,
+        ]);
 
-        $this->redirect(route('dashboard', absolute: false), navigate: false);
+        $this->redirect(route('login.mfa-challenge', absolute: false), navigate: false);
     }
 }; ?>
 

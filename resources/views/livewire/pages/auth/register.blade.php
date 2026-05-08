@@ -15,6 +15,7 @@ new #[Layout('layouts.guest')] class extends Component
     public string $password = '';
     public string $password_confirmation = '';
     public string $name_stego_png_base64 = '';
+    public string $otpChannel = 'email';
 
     /**
      * Handle an incoming registration request.
@@ -26,6 +27,7 @@ new #[Layout('layouts.guest')] class extends Component
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'otpChannel' => ['required', 'in:email,sms'],
         ]);
 
         $pendingRegistration = [
@@ -35,16 +37,29 @@ new #[Layout('layouts.guest')] class extends Component
             'phone' => trim($validated['phone']),
             'password' => Hash::make($validated['password']),
             'role' => 'customer',
+            'otp_channel' => $validated['otpChannel'],
         ];
 
         session()->put('pending_registration', $pendingRegistration);
 
-        $otpService->issueCode(
-            purpose: 'register',
-            channel: 'email',
-            recipient: $pendingRegistration['email'],
-            context: ['stage' => 'registration'],
-        );
+        $recipient = $validated['otpChannel'] === 'sms'
+            ? trim($validated['phone'])
+            : $pendingRegistration['email'];
+
+        try {
+            $otpService->issueCode(
+                purpose: 'register',
+                channel: $validated['otpChannel'],
+                recipient: $recipient,
+                context: ['stage' => 'registration'],
+            );
+        } catch (\Throwable $throwable) {
+            report($throwable);
+            $this->addError('otpChannel', $validated['otpChannel'] === 'email'
+                ? 'Email verification is unavailable. Please use SMS instead.'
+                : 'SMS verification is unavailable. Please use email instead.');
+            return;
+        }
 
         session()->flash('status', 'verification-code-sent');
 
@@ -104,6 +119,36 @@ new #[Layout('layouts.guest')] class extends Component
                             name="password_confirmation" required autocomplete="new-password" />
 
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <!-- OTP Channel Selection -->
+        <div class="mt-6 p-4 rounded-lg border border-amber-500/20 bg-amber-500/10">
+            <x-input-label :value="__('How would you like to verify your account?')" class="text-amber-200 font-semibold mb-3 block" />
+            <div class="space-y-3">
+                <label class="flex items-center cursor-pointer group">
+                    <input 
+                        wire:model="otpChannel" 
+                        type="radio" 
+                        value="email" 
+                        class="rounded border-white/20 bg-zinc-900 text-amber-400 shadow-sm focus:ring-amber-400"
+                    />
+                    <span class="ms-3 text-sm text-zinc-300 group-hover:text-amber-300">
+                        <span class="font-semibold">Email</span> - Get a code sent to your email
+                    </span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input 
+                        wire:model="otpChannel" 
+                        type="radio" 
+                        value="sms" 
+                        class="rounded border-white/20 bg-zinc-900 text-amber-400 shadow-sm focus:ring-amber-400"
+                    />
+                    <span class="ms-3 text-sm text-zinc-300 group-hover:text-amber-300">
+                        <span class="font-semibold">SMS</span> - Get a code sent to your phone
+                    </span>
+                </label>
+            </div>
+            <x-input-error :messages="$errors->get('otpChannel')" class="mt-3" />
         </div>
 
         <div class="pt-2 flex items-center justify-between gap-3">

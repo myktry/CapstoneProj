@@ -35,10 +35,13 @@ new #[Layout('layouts.guest')] class extends Component
             'otp' => ['required', 'digits:6'],
         ]);
 
+        $channel = $pending['otp_channel'] ?? 'email';
+        $recipient = $channel === 'sms' ? $pending['phone'] : $pending['email'];
+
         $isValid = $otpService->verifyCode(
             purpose: 'register',
-            channel: 'email',
-            recipient: $pending['email'],
+            channel: $channel,
+            recipient: $recipient,
             code: $this->otp,
         );
 
@@ -95,11 +98,14 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
+        $channel = $pending['otp_channel'] ?? 'email';
+        $recipient = $channel === 'sms' ? $pending['phone'] : $pending['email'];
+
         try {
             $otpService->issueCode(
                 purpose: 'register',
-                channel: 'email',
-                recipient: $pending['email'],
+                channel: $channel,
+                recipient: $recipient,
                 context: $context,
             );
 

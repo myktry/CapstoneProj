@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\Contracts\HasBeforeChallengeHook;
 use Filament\Auth\MultiFactor\Contracts\MultiFactorAuthenticationProvider;
 use Filament\Forms\Components\OneTimeCodeInput;
+use Filament\Forms\Components\RadioGroup;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -65,6 +66,15 @@ class AdminEmailOtpAuthentication implements HasBeforeChallengeHook, MultiFactor
         }
 
         return [
+            Select::make('mfa_channel')
+                ->label('Verification method')
+                ->options([
+                    'email' => filled($user->email) ? 'Email' : 'Email unavailable',
+                    'sms' => filled($user->phone) ? 'SMS' : 'SMS unavailable',
+                ])
+                ->default('email')
+                ->required(),
+
             OneTimeCodeInput::make('code')
                 ->label('Verification code')
                 ->validationAttribute('code')
@@ -72,8 +82,10 @@ class AdminEmailOtpAuthentication implements HasBeforeChallengeHook, MultiFactor
                     ->label('Resend code')
                     ->link()
                     ->action(function () use ($user): void {
+                        $channel = request()->input('data.mfa_channel', 'email');
+
                         try {
-                            $this->sendCode($user);
+                            $this->sendCode($user, $channel);
                         } catch (\Throwable $throwable) {
                             report($throwable);
 
@@ -93,10 +105,16 @@ class AdminEmailOtpAuthentication implements HasBeforeChallengeHook, MultiFactor
                 ->required()
                 ->rule(function () use ($user): Closure {
                     return function (string $attribute, mixed $value, Closure $fail) use ($user): void {
+                        $channel = request()->input('data.mfa_channel', 'email');
+
+                        $recipient = $channel === 'sms'
+                            ? trim((string) $user->phone)
+                            : strtolower(trim((string) $user->email));
+
                         if ($this->otpService->verifyCode(
                             purpose: 'admin_login',
-                            channel: 'email',
-                            recipient: strtolower(trim((string) $user->email)),
+                            channel: $channel,
+                            recipient: $recipient,
                             code: (string) $value,
                             userId: (int) $user->id,
                         )) {
@@ -109,14 +127,22 @@ class AdminEmailOtpAuthentication implements HasBeforeChallengeHook, MultiFactor
         ];
     }
 
-    protected function sendCode(User $user): void
+    protected function sendCode(User $user, string $channel = 'email'): void
     {
+        $recipient = $channel === 'sms'
+            ? trim((string) $user->phone)
+            : strtolower(trim((string) $user->email));
+
+        if ($recipient === '') {
+            throw new \RuntimeException('No recipient is available for the selected verification method.');
+        }
+
         $this->otpService->issueCode(
             purpose: 'admin_login',
-            channel: 'email',
-            recipient: strtolower(trim((string) $user->email)),
+            channel: $channel,
+            recipient: $recipient,
             userId: (int) $user->id,
-            context: ['stage' => 'admin-login-mfa'],
+            context: ['stage' => 'admin-login-mfa', 'method' => $channel],
         );
     }
 }

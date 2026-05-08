@@ -8,14 +8,18 @@ use Livewire\Volt\Component;
 
 new #[Layout('layouts.guest')] class extends Component
 {
-    public string $method = '';
+    public string $method = 'email';
     public string $otp = '';
 
-    public function mount(): void
+    public function mount(OtpService $otpService): void
     {
         if (! $this->pendingLoginData()) {
             $this->redirect(route('login', absolute: false), navigate: false);
+
+            return;
         }
+
+        $this->sendCode($otpService);
     }
 
     public function sendCode(OtpService $otpService): void

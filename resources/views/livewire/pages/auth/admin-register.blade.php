@@ -16,6 +16,7 @@ new #[Layout('layouts.guest')] class extends Component
     public string $phone = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public string $otpChannel = 'email';
 
     public function mount(): void
     {
@@ -33,6 +34,7 @@ new #[Layout('layouts.guest')] class extends Component
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'otpChannel' => ['required', 'in:email,sms'],
         ]);
 
         $pendingAdmin = [
@@ -41,16 +43,21 @@ new #[Layout('layouts.guest')] class extends Component
             'phone' => trim($validated['phone']),
             'password' => Hash::make($validated['password']),
             'role' => 'admin',
+            'otp_channel' => $validated['otpChannel'],
         ];
 
         session()->put('pending_admin_registration', $pendingAdmin);
 
+        $recipient = $validated['otpChannel'] === 'sms'
+            ? $pendingAdmin['phone']
+            : $pendingAdmin['email'];
+
         try {
             $otpService->issueCode(
                 purpose: 'admin_register',
-                channel: 'email',
-                recipient: $pendingAdmin['email'],
-                context: ['stage' => 'admin-registration'],
+                channel: $validated['otpChannel'],
+                recipient: $recipient,
+                context: ['stage' => 'admin-registration', 'method' => $validated['otpChannel']],
             );
         } catch (ValidationException $exception) {
             session()->flash('status', 'verification-code-sent');
@@ -77,7 +84,7 @@ new #[Layout('layouts.guest')] class extends Component
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Create Admin</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Admin Registration</h1>
         <p class="mt-2 text-sm text-zinc-400">Create the administrator account for Black Ember.</p>
-        <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP to your email address to complete registration.</p>
+        <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP by email or SMS to complete registration.</p>
         <p class="mt-2 text-sm text-amber-200">Only one admin account can exist in the system. Once created, this form will no longer be accessible.</p>
     </div>
 
@@ -161,6 +168,25 @@ new #[Layout('layouts.guest')] class extends Component
                 placeholder="Re-enter your password"
             />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <div class="mt-6 p-4 rounded-lg border border-amber-500/20 bg-amber-500/10">
+            <x-input-label :value="__('How would you like to verify the admin account?')" class="text-amber-200 font-semibold mb-3 block" />
+            <div class="space-y-3">
+                <label class="flex items-center cursor-pointer group">
+                    <input wire:model="otpChannel" type="radio" value="email" class="rounded border-white/20 bg-zinc-900 text-amber-400 shadow-sm focus:ring-amber-400" />
+                    <span class="ms-3 text-sm text-zinc-300 group-hover:text-amber-300">
+                        <span class="font-semibold">Email</span> - Get a code sent to the email address
+                    </span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input wire:model="otpChannel" type="radio" value="sms" class="rounded border-white/20 bg-zinc-900 text-amber-400 shadow-sm focus:ring-amber-400" />
+                    <span class="ms-3 text-sm text-zinc-300 group-hover:text-amber-300">
+                        <span class="font-semibold">SMS</span> - Get a code sent to the phone number
+                    </span>
+                </label>
+            </div>
+            <x-input-error :messages="$errors->get('otpChannel')" class="mt-3" />
         </div>
 
         <div class="pt-4 flex items-center justify-between gap-3">
