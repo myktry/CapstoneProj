@@ -47,7 +47,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): HtmlString => new HtmlString(<<<'HTML'
+                fn (): HtmlString => new HtmlString(view('vite-css')->render() . <<<'HTML'
                     <style>
                         .fi-topbar .fi-user-menu .fi-dropdown-panel {
                             max-width: min(20rem, calc(100vw - 1rem));
