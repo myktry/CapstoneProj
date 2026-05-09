@@ -6,7 +6,7 @@ use Filament\Pages\Page;
 
 class AdminProfile extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+    protected static string $navigationIcon = 'heroicon-o-user-circle';
 
     protected static string $view = 'filament.pages.admin-profile';
 
