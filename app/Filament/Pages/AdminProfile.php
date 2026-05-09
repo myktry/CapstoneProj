@@ -6,9 +6,9 @@ use Filament\Pages\Page;
 
 class AdminProfile extends Page
 {
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-user-circle';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-user-circle';
 
-    protected static string $view = 'filament.pages.admin-profile';
+    protected string $view = 'filament.pages.admin-profile';
 
     protected static ?string $navigationLabel = 'My Profile';
 
