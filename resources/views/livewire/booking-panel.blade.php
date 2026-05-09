@@ -107,17 +107,6 @@
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-semibold text-zinc-300">Email Address *</label>
-                            <input
-                                id="booking_customer_email"
-                                type="email"
-                                wire:model.blur="form.email"
-                                placeholder="john@example.com"
-                                class="w-full rounded-lg border border-amber-500/20 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all duration-200"
-                            />
-                        </div>
-
-                        <div>
                             <label class="mb-2 block text-sm font-semibold text-zinc-300">Phone Number *</label>
                             <input
                                 type="tel"
@@ -129,7 +118,7 @@
 
                         <!-- Booking Summary -->
                         @php
-                            $isComplete = !empty(trim($form['name'])) && !empty(trim($form['email'])) && !empty(trim($form['phone']));
+                            $isComplete = !empty(trim($form['name'])) && !empty(trim($form['phone']));
                         @endphp
                         @if ($isComplete)
                             <div class="transition-all duration-500 rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
@@ -154,11 +143,10 @@
                                         this.busy = true;
                                         try {
                                             const name = (document.getElementById('booking_customer_name')?.value || '').trim();
-                                            const email = (document.getElementById('booking_customer_email')?.value || '').trim();
-                                            if (!name || !email) return;
+                                            if (!name) return;
 
                                             const cover = window.StegoDemo.createCoverImageLike({ width: 300, height: 300 });
-                                            const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name, email });
+                                            const encoded = await window.StegoDemo.hideUserDataInImageLike(cover, { name });
                                             const pngBase64 = window.StegoDemo.imageLikeToPngBase64(encoded);
 
                                             await $wire.set('form.stego_png_base64', pngBase64);
