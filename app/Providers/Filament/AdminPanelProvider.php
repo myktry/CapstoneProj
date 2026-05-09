@@ -3,7 +3,6 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\MultiFactor\AdminEmailOtpAuthentication;
-use App\Filament\Pages\AdminProfile;
 use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\BookingScheduleWidget;
@@ -47,7 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): HtmlString => new HtmlString(view('vite-css')->render() . <<<'HTML'
+                fn (): HtmlString => new HtmlString(<<<'HTML'
                     <style>
                         .fi-topbar .fi-user-menu .fi-dropdown-panel {
                             max-width: min(20rem, calc(100vw - 1rem));
@@ -108,7 +107,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
-                AdminProfile::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
