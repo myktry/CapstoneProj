@@ -148,13 +148,17 @@
         const cancelForm = document.getElementById('cancel-booking-form');
 
         if (openCancelModalButton && closeCancelModalButton && cancelModal) {
+            const hideModal = () => {
+                cancelModal.hidden = true;
+            };
+
             const openModal = () => {
                 cancelModal.hidden = false;
             };
 
-            const closeModal = () => {
-                cancelModal.hidden = true;
-            };
+            const closeModal = hideModal;
+
+            hideModal();
 
             openCancelModalButton.addEventListener('click', openModal);
             closeCancelModalButton.addEventListener('click', closeModal);
@@ -170,6 +174,8 @@
                     closeModal();
                 }
             });
+
+            window.addEventListener('pageshow', hideModal);
 
             if (cancelForm) {
                 cancelForm.addEventListener('submit', () => {
