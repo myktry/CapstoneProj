@@ -40,6 +40,68 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $request->expectsJson();
         });
 
+        // Handle custom application exceptions
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($e instanceof \App\Exceptions\AppException) {
+                return $e->toResponse($request);
+            }
+
+            // Handle HTTP exceptions
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                $statusCode = $e->getStatusCode();
+                $message = match ($statusCode) {
+                    404 => 'The requested resource was not found.',
+                    403 => 'You do not have permission to access this resource.',
+                    401 => 'You must be authenticated to access this resource.',
+                    429 => 'Too many requests. Please try again later.',
+                    503 => 'Service temporarily unavailable. Please try again later.',
+                    default => $e->getMessage(),
+                };
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'ok' => false,
+                        'error' => match ($statusCode) {
+                            404 => 'RESOURCE_NOT_FOUND',
+                            403 => 'FORBIDDEN',
+                            401 => 'AUTH_ERROR',
+                            429 => 'RATE_LIMITED',
+                            503 => 'SERVICE_UNAVAILABLE',
+                            default => 'HTTP_ERROR',
+                        },
+                        'message' => $message,
+                    ], $statusCode);
+                }
+
+                return response()->view('errors.app', [
+                    'statusCode' => $statusCode,
+                    'message' => $message,
+                    'errorCode' => match ($statusCode) {
+                        404 => 'RESOURCE_NOT_FOUND',
+                        403 => 'FORBIDDEN',
+                        401 => 'AUTH_ERROR',
+                        429 => 'RATE_LIMITED',
+                        503 => 'SERVICE_UNAVAILABLE',
+                        default => 'HTTP_ERROR',
+                    },
+                ], $statusCode);
+            }
+
+            // Handle validation exceptions
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'ok' => false,
+                        'error' => 'VALIDATION_ERROR',
+                        'message' => 'Validation failed',
+                        'errors' => $e->errors(),
+                    ], 422);
+                }
+            }
+
+            return null;
+        });
+
         $exceptions->respond(function (Response $response, Throwable $e, Request $request): Response {
             if ($response->getStatusCode() === 500 && ! $request->expectsJson()) {
                 return response()->view('errors.500', [], 500);

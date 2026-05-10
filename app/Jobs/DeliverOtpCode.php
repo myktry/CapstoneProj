@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class DeliverOtpCode implements ShouldQueue
 {
@@ -30,26 +31,57 @@ class DeliverOtpCode implements ShouldQueue
         $message = "Your Black Ember verification code is {$this->code}. It expires in {$this->expiresInMinutes} minutes.";
 
         if ($this->channel === 'email') {
-            Mail::to($this->recipient)->send(
-                new OtpCodeMail(
-                    code: $this->code,
-                    purpose: $this->purpose,
-                    expiresInMinutes: $this->expiresInMinutes,
-                )
-            );
+            try {
+                Mail::to($this->recipient)->send(
+                    new OtpCodeMail(
+                        code: $this->code,
+                        purpose: $this->purpose,
+                        expiresInMinutes: $this->expiresInMinutes,
+                    )
+                );
+
+                Log::info('OTP email delivered successfully', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                ]);
+            } catch (Throwable $exception) {
+                Log::error('Failed to deliver OTP email', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                throw $exception;
+            }
 
             return;
         }
 
         if ($this->channel === 'sms') {
-            $smsSender->send($this->recipient, $message);
+            try {
+                $smsSender->send($this->recipient, $message);
+
+                Log::info('OTP SMS delivered successfully', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                ]);
+            } catch (Throwable $exception) {
+                Log::error('Failed to deliver OTP SMS', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                throw $exception;
+            }
 
             return;
         }
 
-        Log::warning('Unsupported OTP channel encountered in queued delivery.', [
+        Log::warning('Unsupported OTP channel encountered in queued delivery', [
             'channel' => $this->channel,
             'recipient' => $this->recipient,
+            'purpose' => $this->purpose,
         ]);
     }
 }

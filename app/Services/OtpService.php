@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\OtpException;
 use App\Models\OtpChallenge;
 use App\Mail\OtpCodeMail;
 use App\Services\Sms\SmsSender;
@@ -50,35 +51,50 @@ class OtpService
             $secondsRemaining = max(1, (int) ceil($remaining));
             $secondsLabel = $secondsRemaining === 1 ? 'second' : 'seconds';
 
-            throw ValidationException::withMessages([
-                'otp' => "Please wait {$secondsRemaining} {$secondsLabel} before requesting a new code.",
-            ]);
+            throw OtpException::rateLimited("Please wait {$secondsRemaining} {$secondsLabel} before requesting a new code.");
         }
 
-        $code = $this->generateCode();
+        try {
+            $code = $this->generateCode();
 
-        $challenge = OtpChallenge::query()->create([
-            'user_id' => $userId,
-            'purpose' => $normalizedPurpose,
-            'channel' => $normalizedChannel,
-            'recipient' => $normalizedRecipient,
-            'code_hash' => Hash::make($code),
-            'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
-            'context' => $context ?: null,
-        ]);
+            $challenge = OtpChallenge::query()->create([
+                'user_id' => $userId,
+                'purpose' => $normalizedPurpose,
+                'channel' => $normalizedChannel,
+                'recipient' => $normalizedRecipient,
+                'code_hash' => Hash::make($code),
+                'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
+                'context' => $context ?: null,
+            ]);
 
-        $this->deliverCode(
-            channel: $normalizedChannel,
-            recipient: $normalizedRecipient,
-            code: $code,
-            purpose: $normalizedPurpose,
-        );
+            $this->deliverCode(
+                channel: $normalizedChannel,
+                recipient: $normalizedRecipient,
+                code: $code,
+                purpose: $normalizedPurpose,
+            );
 
-        return [
-            'challenge_id' => (int) $challenge->id,
-            'expires_in' => self::OTP_EXPIRY_MINUTES,
-            'cooldown' => self::OTP_COOLDOWN_SECONDS,
-        ];
+            return [
+                'challenge_id' => (int) $challenge->id,
+                'expires_in' => self::OTP_EXPIRY_MINUTES,
+                'cooldown' => self::OTP_COOLDOWN_SECONDS,
+            ];
+        } catch (OtpException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::error('OTP code issuance failed', [
+                'purpose' => $purpose,
+                'channel' => $channel,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new OtpException(
+                'Failed to issue OTP code: ' . $exception->getMessage(),
+                'Unable to send verification code. Please try again.',
+                context: ['purpose' => $purpose, 'channel' => $channel],
+                previous: $exception,
+            );
+        }
     }
 
     public function verifyCode(
@@ -128,9 +144,11 @@ class OtpService
     private function deliverCode(string $channel, string $recipient, string $code, string $purpose): void
     {
         if (! in_array($channel, ['email', 'sms'], true)) {
-            throw ValidationException::withMessages([
-                'otp' => 'Unsupported OTP channel selected.',
-            ]);
+            throw new OtpException(
+                'Unsupported OTP channel selected',
+                'The selected delivery method is not supported.',
+                context: ['channel' => $channel],
+            );
         }
 
         if ($channel === 'email') {
@@ -143,21 +161,20 @@ class OtpService
                     )
                 );
             } catch (Throwable $exception) {
-                Log::error('OTP email delivery failed.', [
+                Log::error('OTP email delivery failed', [
                     'purpose' => $purpose,
                     'recipient' => $recipient,
                     'mailer' => config('mail.default', 'smtp'),
                     'smtp_host' => config('mail.mailers.smtp.host'),
-                    'smtp_port' => config('mail.mailers.smtp.port'),
-                    'smtp_encryption' => config('mail.mailers.smtp.scheme') ?? config('mail.mailers.smtp.encryption'),
-                    'exception_class' => $exception::class,
-                    'previous_exception' => $exception->getPrevious()?->getMessage(),
                     'error' => $exception->getMessage(),
                 ]);
 
-                throw ValidationException::withMessages([
-                    'otp' => 'We could not send the verification email right now. Please try again in a moment.',
-                ]);
+                throw new OtpException(
+                    'Email delivery failed: ' . $exception->getMessage(),
+                    'We could not send the verification email right now. Please try again in a moment.',
+                    context: ['purpose' => $purpose, 'recipient' => $recipient],
+                    previous: $exception,
+                );
             }
 
             return;
@@ -165,7 +182,22 @@ class OtpService
 
         $message = "Your Black Ember verification code is {$code}. It expires in " . self::OTP_EXPIRY_MINUTES . ' minutes.';
 
-        app(SmsSender::class)->send($recipient, $message);
+        try {
+            app(SmsSender::class)->send($recipient, $message);
+        } catch (Throwable $exception) {
+            Log::error('OTP SMS delivery failed', [
+                'purpose' => $purpose,
+                'recipient' => $recipient,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new OtpException(
+                'SMS delivery failed: ' . $exception->getMessage(),
+                'We could not send the verification SMS right now. Please try again in a moment.',
+                context: ['purpose' => $purpose, 'recipient' => $recipient],
+                previous: $exception,
+            );
+        }
     }
 
     private function normalizeRecipient(string $channel, string $recipient): string

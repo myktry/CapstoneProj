@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\AuthorizationException;
+use App\Exceptions\RefundException;
 use App\Jobs\SyncRefundStatus;
 use App\Models\Appointment;
 use App\Services\RefundStatusSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Stripe\Checkout\Session as StripeSession;
 use Stripe\Refund;
 use Stripe\Stripe;
@@ -16,14 +19,28 @@ class BookingRefundController extends Controller
 {
     public function show(Request $request, Appointment $appointment, RefundStatusSyncService $refundStatusSyncService)
     {
-        abort_unless((int) $appointment->user_id === (int) $request->user()?->id, 403);
+        if ((int) $appointment->user_id !== (int) $request->user()?->id) {
+            throw new AuthorizationException(
+                'User does not own this appointment',
+                'You do not have permission to view this appointment.',
+                context: ['appointment_id' => $appointment->id],
+            );
+        }
 
         if ($appointment->seen_at === null) {
             $appointment->update(['seen_at' => now()]);
         }
 
-        $refundStatusSyncService->sync($appointment);
-        $appointment->refresh();
+        try {
+            $refundStatusSyncService->sync($appointment);
+            $appointment->refresh();
+        } catch (\Throwable $exception) {
+            Log::error('Failed to sync refund status', [
+                'appointment_id' => $appointment->id,
+                'error' => $exception->getMessage(),
+            ]);
+            // Continue with cached data
+        }
 
         $deductionPercent = max(0, min(100, (int) config('refund.deduction_percent', 25)));
         $canRequestRefund = $this->canRequestRefund($appointment);
@@ -41,36 +58,65 @@ class BookingRefundController extends Controller
 
     public function cancel(Request $request, Appointment $appointment): RedirectResponse
     {
-        abort_unless((int) $appointment->user_id === (int) $request->user()?->id, 403);
+        if ((int) $appointment->user_id !== (int) $request->user()?->id) {
+            throw new AuthorizationException(
+                'User does not own this appointment',
+                'You do not have permission to cancel this appointment.',
+                context: ['appointment_id' => $appointment->id],
+            );
+        }
 
         if ($appointment->status !== 'paid') {
-            return back()->with('error', 'Only paid bookings can be cancelled with refund.');
+            throw new RefundException(
+                'Appointment status is not paid',
+                'Only paid bookings can be cancelled with refund.',
+                context: ['status' => $appointment->status],
+            );
         }
 
         if ($appointment->refund_status === 'pending') {
-            return back()->with('error', 'A refund request is already pending confirmation.');
+            throw new RefundException(
+                'Refund already pending',
+                'A refund request is already pending confirmation.',
+                context: ['refund_status' => $appointment->refund_status],
+            );
         }
 
         if ($appointment->refund_status === 'processed') {
-            return back()->with('error', 'This booking has already been refunded.');
+            throw new RefundException(
+                'Booking already refunded',
+                'This booking has already been refunded.',
+                context: ['refund_status' => $appointment->refund_status],
+            );
         }
 
         if (! $this->canRequestRefund($appointment)) {
-            return back()->with('error', 'Refund is no longer allowed within 10 minutes before your appointment.');
+            throw new RefundException(
+                'Refund cutoff time passed',
+                'Refund is no longer allowed within 10 minutes before your appointment.',
+            );
         }
 
         $deductionPercent = max(0, min(100, (int) config('refund.deduction_percent', 25)));
         $amountPaid = (int) $appointment->amount_paid;
 
         if ($amountPaid <= 0) {
-            return back()->with('error', 'No paid amount found for this booking.');
+            throw new RefundException(
+                'No paid amount found',
+                'No paid amount found for this booking.',
+                context: ['amount_paid' => $amountPaid],
+            );
         }
 
         $deductionAmount = (int) round(($amountPaid * $deductionPercent) / 100);
         $refundAmount = max(0, $amountPaid - $deductionAmount);
 
         if ($refundAmount <= 0) {
-            return back()->with('error', 'Refund amount is zero based on the current policy.');
+            throw new RefundException(
+                'Refund amount is zero',
+                'Refund amount is zero based on the current policy.',
+                context: ['refund_amount' => $refundAmount, 'deduction_percent' => $deductionPercent],
+            );
         }
 
         Stripe::setApiKey((string) config('services.stripe.secret'));
@@ -78,12 +124,24 @@ class BookingRefundController extends Controller
         $paymentIntentId = (string) ($appointment->stripe_payment_intent_id ?: '');
 
         if ($paymentIntentId === '' && $appointment->stripe_session_id) {
-            $session = StripeSession::retrieve((string) $appointment->stripe_session_id);
-            $paymentIntentId = (string) ($session->payment_intent ?? '');
+            try {
+                $session = StripeSession::retrieve((string) $appointment->stripe_session_id);
+                $paymentIntentId = (string) ($session->payment_intent ?? '');
+            } catch (\Throwable $exception) {
+                Log::error('Failed to retrieve payment intent from Stripe session', [
+                    'appointment_id' => $appointment->id,
+                    'session_id' => $appointment->stripe_session_id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
         }
 
         if ($paymentIntentId === '') {
-            return back()->with('error', 'Unable to locate the original payment reference for refund.');
+            throw new RefundException(
+                'Unable to locate payment reference',
+                'Unable to locate the original payment reference for refund.',
+                context: ['appointment_id' => $appointment->id],
+            );
         }
 
         try {
@@ -97,7 +155,18 @@ class BookingRefundController extends Controller
                 ],
             ]);
         } catch (\Throwable $exception) {
-            return back()->with('error', 'Refund request failed: '.$exception->getMessage());
+            Log::error('Refund creation failed with Stripe', [
+                'appointment_id' => $appointment->id,
+                'payment_intent_id' => $paymentIntentId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new RefundException(
+                'Refund request failed: ' . $exception->getMessage(),
+                'Refund request failed. Please try again or contact support.',
+                context: ['appointment_id' => $appointment->id],
+                previous: $exception,
+            );
         }
 
         $appointment->update([
