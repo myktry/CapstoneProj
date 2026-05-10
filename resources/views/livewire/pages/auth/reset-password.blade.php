@@ -65,7 +65,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         Session::flash('status', __($status));
 
-        $this->redirectRoute('login', navigate: true);
+        $this->redirectRoute('login');
     }
 }; ?>
 
@@ -97,7 +97,7 @@ new #[Layout('layouts.guest')] class extends Component
         </div>
 
         <div class="mt-4 flex items-center justify-between gap-3">
-            <a href="{{ route('login') }}" class="text-sm font-medium text-zinc-400 underline underline-offset-2 transition hover:text-amber-300" wire:navigate>
+            <a href="{{ route('login') }}" class="text-sm font-medium text-zinc-400 underline underline-offset-2 transition hover:text-amber-300">
                 {{ __('Back to login') }}
             </a>
 
