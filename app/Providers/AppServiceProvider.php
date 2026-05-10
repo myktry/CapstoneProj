@@ -31,6 +31,7 @@ use Filament\Livewire\Notifications as FilamentNotifications;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -74,6 +75,12 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.filament.resources.services.pages.list-services', ListServices::class);
         Livewire::component('app.filament.resources.services.pages.create-service', CreateService::class);
         Livewire::component('app.filament.resources.services.pages.edit-service', EditService::class);
+
+        Livewire::setUpdateRoute(function ($handle) {
+            return Route::post('/livewire/update', $handle)
+                ->middleware(['web', 'throttle:30,1'])
+                ->name('default.livewire.update');
+        });
 
         // Ensure Livewire temp directory exists to avoid upload failures when directory is missing in production.
         $livewireTmp = storage_path('framework/livewire-tmp');
