@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-zinc-950 text-zinc-100 antialiased">
-    <main class="mx-auto w-full max-w-3xl px-6 py-12" x-data="{ cancelModalOpen: false }" x-on:keydown.escape.window="cancelModalOpen = false">
+    <main class="mx-auto w-full max-w-3xl px-6 py-12">
         <a href="{{ route('home') }}" class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300">Back to home</a>
 
         <section class="mt-6 rounded-2xl border border-white/10 bg-zinc-900/80 p-6 shadow-2xl shadow-black/40">
@@ -77,7 +77,7 @@
                     @csrf
                     <button
                         type="button"
-                        x-on:click="cancelModalOpen = true"
+                        id="open-cancel-modal"
                         class="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:bg-red-400"
                     >
                         Cancel Booking and Request Refund
@@ -101,15 +101,13 @@
         </section>
 
         <div
-            x-cloak
-            x-show="cancelModalOpen"
-            x-transition.opacity
+            id="cancel-modal"
+            hidden
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
             role="dialog"
             aria-modal="true"
         >
             <div
-                x-on:click.outside="cancelModalOpen = false"
                 class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
             >
                 <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Confirm Cancellation</p>
@@ -125,7 +123,7 @@
                 <div class="mt-6 flex items-center justify-end gap-3">
                     <button
                         type="button"
-                        x-on:click="cancelModalOpen = false"
+                        id="close-cancel-modal"
                         class="rounded-full border border-white/15 bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700"
                     >
                         Keep Booking
@@ -142,5 +140,43 @@
             </div>
         </div>
     </main>
+
+    <script>
+        const openCancelModalButton = document.getElementById('open-cancel-modal');
+        const closeCancelModalButton = document.getElementById('close-cancel-modal');
+        const cancelModal = document.getElementById('cancel-modal');
+        const cancelForm = document.getElementById('cancel-booking-form');
+
+        if (openCancelModalButton && closeCancelModalButton && cancelModal) {
+            const openModal = () => {
+                cancelModal.hidden = false;
+            };
+
+            const closeModal = () => {
+                cancelModal.hidden = true;
+            };
+
+            openCancelModalButton.addEventListener('click', openModal);
+            closeCancelModalButton.addEventListener('click', closeModal);
+
+            cancelModal.addEventListener('click', (event) => {
+                if (event.target === cancelModal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !cancelModal.hidden) {
+                    closeModal();
+                }
+            });
+
+            if (cancelForm) {
+                cancelForm.addEventListener('submit', () => {
+                    closeModal();
+                });
+            }
+        }
+    </script>
 </body>
 </html>
