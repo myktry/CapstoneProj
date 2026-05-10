@@ -6,6 +6,7 @@ window.axios = axios;
 window.flatpickr = flatpickr;
 window.Alpine = Alpine;
 
-Alpine.start();
+// Don't start Alpine here - Livewire handles Alpine initialization via @livewireScripts
+// Alpine.start();
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
