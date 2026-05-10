@@ -25,7 +25,7 @@ new #[Layout('layouts.guest')] class extends Component
     {
         $this->token = $token;
 
-        $this->email = request()->string('email');
+        $this->email = (string) request()->query('email', '');
     }
 
     /**
@@ -70,7 +70,7 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
-    <form wire:submit="resetPassword">
+    <form wire:submit.prevent="resetPassword">
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
@@ -96,7 +96,11 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="mt-4 flex items-center justify-between gap-3">
+            <a href="{{ route('login') }}" class="text-sm font-medium text-zinc-400 underline underline-offset-2 transition hover:text-amber-300" wire:navigate>
+                {{ __('Back to login') }}
+            </a>
+
             <x-primary-button>
                 {{ __('Reset Password') }}
             </x-primary-button>
