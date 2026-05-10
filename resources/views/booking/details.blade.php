@@ -83,6 +83,46 @@
                         Cancel Booking and Request Refund
                     </button>
                 </form>
+
+                <div
+                    id="cancel-modal"
+                    hidden
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div
+                        class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
+                    >
+                        <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Confirm Cancellation</p>
+                        <h2 class="mt-2 text-2xl font-semibold text-white">Cancel Booking?</h2>
+                        <p class="mt-3 text-sm text-zinc-300">
+                            This action will cancel your booking and submit a refund request to Stripe.
+                            A {{ $deductionPercent }}% non-refundable deduction will apply.
+                        </p>
+                        <p class="mt-3 text-xs text-zinc-400">
+                            Refund is not available once the appointment is within 10 minutes.
+                        </p>
+
+                        <div class="mt-6 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                id="close-cancel-modal"
+                                class="rounded-full border border-white/15 bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700"
+                            >
+                                Keep Booking
+                            </button>
+
+                            <button
+                                type="submit"
+                                form="cancel-booking-form"
+                                class="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
+                            >
+                                Yes, Cancel and Request Refund
+                            </button>
+                        </div>
+                    </div>
+                </div>
             @else
                 <div class="mt-6 rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
                     @if ($appointment->refund_status === 'pending')
@@ -99,46 +139,6 @@
                 </div>
             @endif
         </section>
-
-        <div
-            id="cancel-modal"
-            hidden
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
-            role="dialog"
-            aria-modal="true"
-        >
-            <div
-                class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
-            >
-                <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Confirm Cancellation</p>
-                <h2 class="mt-2 text-2xl font-semibold text-white">Cancel Booking?</h2>
-                <p class="mt-3 text-sm text-zinc-300">
-                    This action will cancel your booking and submit a refund request to Stripe.
-                    A {{ $deductionPercent }}% non-refundable deduction will apply.
-                </p>
-                <p class="mt-3 text-xs text-zinc-400">
-                    Refund is not available once the appointment is within 10 minutes.
-                </p>
-
-                <div class="mt-6 flex items-center justify-end gap-3">
-                    <button
-                        type="button"
-                        id="close-cancel-modal"
-                        class="rounded-full border border-white/15 bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700"
-                    >
-                        Keep Booking
-                    </button>
-
-                    <button
-                        type="submit"
-                        form="cancel-booking-form"
-                        class="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
-                    >
-                        Yes, Cancel and Request Refund
-                    </button>
-                </div>
-            </div>
-        </div>
     </main>
 
     <script>
