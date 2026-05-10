@@ -39,41 +39,41 @@ new class extends Component
 }; ?>
 
 <section>
-    <header>
-        <h2 class="text-lg font-medium text-white">
+    <header style="margin-bottom:1rem;">
+        <h2 style="font-size:1.125rem; line-height:1.75rem; font-weight:600; color:#f4f4f5;">
             {{ __('Update Password') }}
         </h2>
 
-        <p class="mt-1 text-sm text-zinc-400">
+        <p style="margin-top:0.25rem; font-size:0.875rem; line-height:1.25rem; color:#a1a1aa;">
             {{ __('Ensure your account is using a long, random password to stay secure.') }}
         </p>
     </header>
 
-    <form wire:submit="updatePassword" class="mt-6 space-y-6">
+    <form wire:submit="updatePassword" style="display:grid; gap:1rem;">
         <div>
-            <x-input-label for="update_password_current_password" :value="__('Current Password')" class="text-zinc-300" />
-            <x-text-input wire:model="current_password" id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400" autocomplete="current-password" />
-            <x-input-error :messages="$errors->get('current_password')" class="mt-2" />
+            <label for="update_password_current_password" style="display:block; margin-bottom:0.35rem; font-size:0.875rem; font-weight:600; color:#d4d4d8;">{{ __('Current Password') }}</label>
+            <input wire:model="current_password" id="update_password_current_password" name="current_password" type="password" autocomplete="current-password" style="width:100%; border:1px solid rgba(255,255,255,0.12); border-radius:0.75rem; background:#09090b; color:#fff; padding:0.8rem 0.95rem; outline:none;" />
+            <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.875rem;">@foreach ($errors->get('current_password') as $message) <div>{{ $message }}</div> @endforeach</div>
         </div>
 
         <div>
-            <x-input-label for="update_password_password" :value="__('New Password')" class="text-zinc-300" />
-            <x-text-input wire:model="password" id="update_password_password" name="password" type="password" class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400" autocomplete="new-password" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            <label for="update_password_password" style="display:block; margin-bottom:0.35rem; font-size:0.875rem; font-weight:600; color:#d4d4d8;">{{ __('New Password') }}</label>
+            <input wire:model="password" id="update_password_password" name="password" type="password" autocomplete="new-password" style="width:100%; border:1px solid rgba(255,255,255,0.12); border-radius:0.75rem; background:#09090b; color:#fff; padding:0.8rem 0.95rem; outline:none;" />
+            <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.875rem;">@foreach ($errors->get('password') as $message) <div>{{ $message }}</div> @endforeach</div>
         </div>
 
         <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Confirm Password')" class="text-zinc-300" />
-            <x-text-input wire:model="password_confirmation" id="update_password_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400" autocomplete="new-password" />
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+            <label for="update_password_password_confirmation" style="display:block; margin-bottom:0.35rem; font-size:0.875rem; font-weight:600; color:#d4d4d8;">{{ __('Confirm Password') }}</label>
+            <input wire:model="password_confirmation" id="update_password_password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" style="width:100%; border:1px solid rgba(255,255,255,0.12); border-radius:0.75rem; background:#09090b; color:#fff; padding:0.8rem 0.95rem; outline:none;" />
+            <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.875rem;">@foreach ($errors->get('password_confirmation') as $message) <div>{{ $message }}</div> @endforeach</div>
         </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button class="!rounded-full !bg-amber-400 !px-5 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300">{{ __('Save') }}</x-primary-button>
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <button type="submit" style="border:none; border-radius:9999px; background:#fbbf24; color:#111827; padding:0.8rem 1.25rem; font-weight:700; cursor:pointer;">{{ __('Save') }}</button>
 
-            <x-action-message class="me-3 text-zinc-400" on="password-updated">
+            <span style="color:#a1a1aa; font-size:0.875rem;" class="me-3" on="password-updated">
                 {{ __('Saved.') }}
-            </x-action-message>
+            </span>
         </div>
     </form>
 </section>

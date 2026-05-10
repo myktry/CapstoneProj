@@ -75,50 +75,50 @@ new class extends Component
 }; ?>
 
 <section>
-    <header>
-        <h2 class="text-lg font-medium text-white">
+    <header style="margin-bottom: 1rem;">
+        <h2 style="font-size: 1.125rem; line-height: 1.75rem; font-weight: 600; color: #f4f4f5;">
             {{ __('Profile Information') }}
         </h2>
 
-        <p class="mt-1 text-sm text-zinc-400">
+        <p style="margin-top: 0.25rem; font-size: 0.875rem; line-height: 1.25rem; color: #a1a1aa;">
             {{ __("Update your account's profile information and email address.") }}
         </p>
     </header>
 
-    <form wire:submit="updateProfileInformation" class="mt-6 space-y-6">
+    <form wire:submit="updateProfileInformation" style="display: grid; gap: 1rem;">
         <input type="hidden" wire:model.defer="name_stego_png_base64" />
         <div>
-            <x-input-label for="name" :value="__('Name')" class="text-zinc-300" />
-            <x-text-input
+            <label for="name" style="display:block; margin-bottom:0.35rem; font-size:0.875rem; font-weight:600; color:#d4d4d8;">{{ __('Name') }}</label>
+            <input
                 wire:model="name"
                 id="name"
                 name="name"
                 type="text"
-                class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                style="width:100%; border:1px solid rgba(255,255,255,0.12); border-radius:0.75rem; background:#09090b; color:#fff; padding:0.8rem 0.95rem; outline:none;"
                 required
                 autofocus
                 autocomplete="name"
             />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.875rem;">@foreach ($errors->get('name') as $message) <div>{{ $message }}</div> @endforeach</div>
         </div>
 
         <div>
-            <x-input-label for="email" :value="__('Email')" class="text-zinc-300" />
-            <x-text-input wire:model="email" id="email" name="email" type="email" class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+            <label for="email" style="display:block; margin-bottom:0.35rem; font-size:0.875rem; font-weight:600; color:#d4d4d8;">{{ __('Email') }}</label>
+            <input wire:model="email" id="email" name="email" type="email" required autocomplete="username" style="width:100%; border:1px solid rgba(255,255,255,0.12); border-radius:0.75rem; background:#09090b; color:#fff; padding:0.8rem 0.95rem; outline:none;" />
+            <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.875rem;">@foreach ($errors->get('email') as $message) <div>{{ $message }}</div> @endforeach</div>
 
             @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! auth()->user()->hasVerifiedEmail())
                 <div>
-                    <p class="text-sm mt-2 text-zinc-300">
+                    <p style="margin-top:0.5rem; font-size:0.875rem; color:#d4d4d8;">
                         {{ __('Your email address is unverified.') }}
 
-                        <button wire:click.prevent="sendVerification" class="underline text-sm text-amber-300 hover:text-amber-200 rounded-md focus:outline-none">
+                        <button wire:click.prevent="sendVerification" type="button" style="margin-left:0.25rem; background:none; border:0; color:#fcd34d; text-decoration:underline; cursor:pointer; padding:0;">
                             {{ __('Click here to re-send the verification email.') }}
                         </button>
                     </p>
 
                     @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
+                        <p style="margin-top:0.5rem; font-size:0.875rem; font-weight:600; color:#4ade80;">
                             {{ __('A new verification link has been sent to your email address.') }}
                         </p>
                     @endif
@@ -127,13 +127,14 @@ new class extends Component
         </div>
 
         <div>
-            <x-input-label for="phone" :value="__('Phone Number')" class="text-zinc-300" />
-            <x-text-input wire:model="phone" id="phone" name="phone" type="text" class="mt-1 block w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400" required autocomplete="tel" />
-            <x-input-error class="mt-2" :messages="$errors->get('phone')" />
+            <label for="phone" style="display:block; margin-bottom:0.35rem; font-size:0.875rem; font-weight:600; color:#d4d4d8;">{{ __('Phone Number') }}</label>
+            <input wire:model="phone" id="phone" name="phone" type="text" required autocomplete="tel" style="width:100%; border:1px solid rgba(255,255,255,0.12); border-radius:0.75rem; background:#09090b; color:#fff; padding:0.8rem 0.95rem; outline:none;" />
+            <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.875rem;">@foreach ($errors->get('phone') as $message) <div>{{ $message }}</div> @endforeach</div>
         </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <button
+                type="submit"
                 x-data="{ busy: false }"
                 x-on:click.prevent="
                     if (busy) return;
@@ -150,14 +151,14 @@ new class extends Component
                         busy = false;
                     }
                 "
-                class="!rounded-full !bg-amber-400 !px-5 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300"
+                style="border:none; border-radius:9999px; background:#fbbf24; color:#111827; padding:0.8rem 1.25rem; font-weight:700; cursor:pointer;"
             >
                 {{ __('Save') }}
-            </x-primary-button>
+            </button>
 
-            <x-action-message class="me-3 text-zinc-400" on="profile-updated">
+            <span style="color:#a1a1aa; font-size:0.875rem;" class="me-3" on="profile-updated">
                 {{ __('Saved.') }}
-            </x-action-message>
+            </span>
         </div>
     </form>
 </section>
