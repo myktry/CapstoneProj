@@ -23,4 +23,9 @@ class AdminProfile extends Page
     {
         return 'Manage your account settings and preferences';
     }
+
+    public static function getLabel(): ?string
+    {
+        return 'My Profile';
+    }
 }
