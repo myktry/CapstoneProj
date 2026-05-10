@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\MultiFactor\AdminEmailOtpAuthentication;
+use App\Filament\Pages\AdminProfile;
 use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\AdminOverview;
 use App\Filament\Widgets\BookingScheduleWidget;
@@ -40,10 +41,18 @@ class AdminPanelProvider extends PanelProvider
                 AdminEmailOtpAuthentication::make(),
             ])
             ->brandName('Black Ember Admin')
+            ->profile(AdminProfile::class, false)
             ->colors([
                 'primary' => Color::Amber,
                 'gray' => Color::Zinc,
             ])
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): HtmlString => new HtmlString(sprintf(
+                    '<a href="%s" class="fi-btn fi-btn-size-sm fi-btn-color-gray inline-flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition hover:bg-zinc-800 hover:text-white">\n                        <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="9" r="3" /><path d="M5.5 19a8.5 8.5 0 0 1 13 0" /></svg>\n                        <span>My Profile</span>\n                    </a>',
+                    e(\Filament\Facades\Filament::getProfileUrl() ?? '/admin/admin-profile')
+                )),
+            )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): HtmlString => new HtmlString(<<<'HTML'
