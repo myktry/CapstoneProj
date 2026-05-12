@@ -82,11 +82,11 @@ class AppServiceProvider extends ServiceProvider
                 ->name('default.livewire.update');
         });
 
-        // Ensure Livewire temp directory exists to avoid upload failures when directory is missing in production.
-        $livewireTmp = storage_path('framework/livewire-tmp');
-        if (! File::exists($livewireTmp)) {
-            File::makeDirectory($livewireTmp, 0755, true);
-        }
+        // Ensure Livewire temp directory exists (matches local disk root + livewire.temporary_file_upload.directory).
+        $livewireTmp = storage_path(
+            'app/private/'.ltrim((string) config('livewire.temporary_file_upload.directory', 'livewire-tmp'), '/')
+        );
+        File::ensureDirectoryExists($livewireTmp);
 
         RateLimiter::for('receipt-decrypt', function (Request $request): array {
             $ip = (string) $request->ip();

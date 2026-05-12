@@ -40,7 +40,7 @@ class RecentActivityWidget extends TableWidget
                         'created' => 'success',
                         'updated' => 'warning',
                         'deleted' => 'danger',
-                        default   => 'gray',
+                        default => 'gray',
                     }),
                 TextColumn::make('description')
                     ->searchable()

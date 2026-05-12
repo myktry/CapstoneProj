@@ -1,0 +1,542 @@
+================================================================================
+BLACK EMBER — STEGANOGRAPHY REFERENCE (DETAILED)
+================================================================================
+Generated for CapstoneProj. Describes browser-side PNG steganography, embedded
+data fields, storage, and end-to-end flows. Laravel persists base64 PNG blobs;
+embed and extract run in JavaScript via Vite bundle resources/js/app.js.
+
+================================================================================
+1. SUMMARY
+================================================================================
+
+Two independent pipelines share the vendored LSB library
+(resources/js/vendor/stegano-kit/index.js) but differ in carrier image, encryption,
+and database columns.
+
+  Pipeline A — User / booking customer names
+    - Embeds a small JSON object (usually { "name": "..." }) in a random cover.
+    - Encrypts with CryptoJS AES before LSB embedding (default key in JS).
+    - Stores PNG base64 in users.name_stego_png_base64 and
+      appointments.customer_stego_png_base64.
+    - Plaintext name columns are often set to the literal string "HIDDEN".
+
+  Pipeline B — Admin service and closed-date metadata
+    - Embeds versioned JSON describing service or closed-date fields.
+    - Encrypts inside stegano-kit with AES-256-GCM using VITE_STEGO_SECRET.
+    - Uses scatterPayload + randomizeBitSlots; tries bitsPerChannel 1, 2, 3 and
+      optional carrier upscaling.
+    - Stores PNG base64 in services.metadata_stego_png_base64 and
+      closed_dates.metadata_stego_png_base64.
+
+Global browser API: window.StegoDemo (defined in resources/js/app.js).
+
+================================================================================
+2. EMBEDDED DATA (WHAT GOES INSIDE THE PNG)
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 User account name (Pipeline A)
+--------------------------------------------------------------------------------
+Trigger: Profile save (update-profile-information-form.blade.php) embeds on Save.
+Registration (register.blade.php) has a hidden name_stego_png_base64 field but
+no client-side embed on submit in that form; value is only stored if populated
+before register.
+
+JSON inside image (before CryptoJS encrypt):
+  {
+    "name": "<user's display name from the name input>"
+  }
+
+Optional API shape (used in scripts/test-stego.mjs, not production UI):
+  {
+    "name": "<string>",
+    "email": "<string>"
+  }
+  hideUserDataInImageLike omits email key when email argument is undefined.
+
+NOT embedded in this PNG: email, phone, password, user id, role.
+
+Database after save:
+  - users.name = "HIDDEN" (profile update explicitly sets placeholder)
+  - users.name_stego_png_base64 = PNG without data: URL prefix
+
+Registration after OTP (register-verify-otp.blade.php):
+  - users.name = "HIDDEN"
+  - users.name_stego_png_base64 from session pending_registration
+  - email, phone, password stored in normal columns (not in stego PNG)
+
+--------------------------------------------------------------------------------
+2.2 Appointment customer name (Pipeline A)
+--------------------------------------------------------------------------------
+Trigger: booking-panel.blade.php on "Continue to SMS Verification".
+
+JSON inside image (before CryptoJS encrypt):
+  {
+    "name": "<customer name from booking_customer_name input>"
+  }
+
+NOT embedded: phone, email, service id, date, time, user id, payment data.
+Phone is stored in appointments.customer_phone as plaintext.
+
+Database after successful Stripe checkout (CheckoutController.php):
+  - appointments.customer_name = "HIDDEN"
+  - appointments.customer_email = "" (empty string)
+  - appointments.customer_stego_png_base64 = PNG from checkout cache
+  - appointment_date, appointment_time, customer_phone, service_id, etc. in
+    normal columns / Stripe metadata (not inside stego PNG)
+
+Booking flow before DB:
+  - Livewire form.stego_png_base64 (hidden)
+  - Session pending_booking_draft.customer_stego_png_base64
+  - Cache key booking:{stripe_session_id} for up to 2 hours during checkout
+
+--------------------------------------------------------------------------------
+2.3 Service metadata (Pipeline B)
+--------------------------------------------------------------------------------
+Trigger: Filament admin "Regenerate stego PNG" on service form, then save record.
+
+Built by serviceMetadataPayloadFromForm() in resources/js/stego/index.js from
+Filament livewire snapshot:
+
+  {
+    "v": 1,
+    "kind": "service",
+    "serviceId": <number|null>,          // record id when editing
+    "name": "<string>",
+    "description": "<string>",
+    "price": "<string>",                 // decimal stringified from form
+    "durationMinutes": <number>,         // integer, 0 if invalid
+    "imagePath": "<string>",             // services.image path
+    "galleryName": "<string>",           // linked gallery item name
+    "galleryImagePath": "<string>"       // linked gallery item image path
+  }
+
+Source fields (regenServiceMetadataStego in app.js):
+  - serviceId: livewire.record.id or form id
+  - name, description, price, duration_minutes from livewire.data
+  - imagePath: data.image
+  - galleryName, galleryImagePath: data-* on #service-metadata-stego-ui
+
+NOT embedded in JSON: is_active, sort_order, gallery_item_id foreign key alone,
+Stripe data, use_hehe_for_stego_carrier toggle (UI-only).
+
+Carrier image (not part of JSON payload):
+  - Gallery/service public URL when available and toggle off
+  - Otherwise public/img/hehe.png (nearest-neighbor upscale when using hehe)
+
+Database:
+  - services.metadata_stego_png_base64
+  - Plain service columns still hold name, price, etc. separately; stego is an
+    additional copy of selected fields inside a PNG.
+
+--------------------------------------------------------------------------------
+2.4 Closed-date metadata (Pipeline B)
+--------------------------------------------------------------------------------
+Trigger: Filament admin "Regenerate stego PNG" on closed-date form, then save.
+
+Built by closedDateMetadataPayloadFromForm():
+
+  {
+    "v": 1,
+    "kind": "closed_date",
+    "closedDateId": <number|null>,
+    "date": "<YYYY-MM-DD string>",
+    "type": "<string>",                  // e.g. closed, holiday
+    "note": "<string>"
+  }
+
+Source fields (regenClosedDateMetadataStego):
+  - closedDateId: record id or form id
+  - date: normalized from Filament date (ISO split or format Y-m-d)
+  - type, note from livewire.data
+
+NOT embedded: is_active.
+
+Carrier: always hehe.png URL with nearestNeighbor true.
+
+Database: closed_dates.metadata_stego_png_base64
+
+================================================================================
+3. DATA NOT EMBEDDED ANYWHERE IN STEGO
+================================================================================
+
+The following are never placed inside steganographic PNGs in this codebase:
+  - Passwords, OTP codes, Stripe tokens, session ids
+  - User email and phone (except optional test script with name+email)
+  - Appointment scheduling fields except customer name in booking PNG
+  - Payment amounts, refund fields, admin audit logs
+  - Full binary upload of user-uploaded photos as payload (only path strings in
+    service metadata JSON)
+
+================================================================================
+4. DATABASE COLUMNS AND MIGRATIONS
+================================================================================
+
+  users.name_stego_png_base64
+    Migration: database/migrations/2026_04_29_000002_add_name_stego_to_users_table.php
+    Type: longText nullable
+
+  appointments.customer_stego_png_base64
+    Migration: database/migrations/2026_04_29_000001_add_customer_stego_to_appointments_table.php
+    Type: longText nullable
+
+  services.metadata_stego_png_base64
+  closed_dates.metadata_stego_png_base64
+    Migration: database/migrations/2026_05_10_000001_add_metadata_stego_png_to_services_and_closed_dates_tables.php
+    Type: longText nullable
+
+Models (fillable): User, Appointment, Service, ClosedDate include respective
+columns.
+
+================================================================================
+5. CONFIGURATION AND DEPENDENCIES
+================================================================================
+
+  .env.example
+    VITE_STEGO_SECRET=   # Password for Pipeline B stegano-kit AES-GCM; must
+                         # match at embed and decode build time.
+
+  resources/js/stego/index.js
+    DEFAULT_DEV_KEY = 'dev-only-secret-key'  # CryptoJS key for Pipeline A and
+                         # fallback when VITE_STEGO_SECRET unset (metadata).
+
+  package.json
+    crypto-js — used by Pipeline A encryptPayload/decryptPayload.
+
+  public/img/hehe.png — default mascot carrier for metadata and service fallback.
+
+  resources/views/filament/vite-admin-stego.blade.php
+    @vite(['resources/js/app.js']) — loads StegoDemo in Filament admin.
+
+  app/Providers/Filament/AdminPanelProvider.php
+    Renders vite-admin-stego in panel footer so admin forms can call StegoDemo.
+
+================================================================================
+6. END-TO-END FLOWS (ASCII)
+================================================================================
+
+--------------------------------------------------------------------------------
+6.1 Pipeline A — Profile name embed and read
+--------------------------------------------------------------------------------
+
+  [User types name] -> [Save click in profile form]
+        |
+        v
+  createCoverImageLike(300x300 random RGB)
+        |
+        v
+  hideUserDataInImageLike(cover, { name })
+        |-- encryptPayload -> CryptoJS AES string
+        |-- encode(cover, cipherText)  [linear LSB, bitsPerChannel default 1]
+        v
+  imageLikeToPngBase64 -> strip data:image/png;base64, prefix
+        |
+        v
+  Livewire name_stego_png_base64 + updateProfileInformation()
+        |
+        v
+  DB: name='HIDDEN', name_stego_png_base64=<base64>
+
+  Read path: GET /stego/user (auth)
+        |
+        v
+  Blade loads user.name_stego_png_base64 as img src
+        |
+        v
+  pngBase64ToImageLike -> revealUserDataFromImageLike
+        |-- decode -> CryptoJS ciphertext string
+        |-- decryptPayload -> { name }
+        v
+  Display JSON on page (stego/user.blade.php)
+
+--------------------------------------------------------------------------------
+6.2 Pipeline A — Booking customer name
+--------------------------------------------------------------------------------
+
+  [Booking panel: name + phone + slot selected]
+        |
+        v
+  secureAndSubmit(): createCoverImageLike, hideUserDataInImageLike({ name })
+        |
+        v
+  form.stego_png_base64 set -> submitBooking()
+        |
+        v
+  Session pending_booking_draft includes customer_stego_png_base64
+        |
+        v
+  (SMS verify) -> checkout -> CheckoutController::create
+        |
+        v
+  Cache::put('booking:{sessionId}', { customer_stego_png_base64 })
+        |
+        v
+  Stripe success -> Appointment::create
+        customer_name HIDDEN, customer_stego_png_base64 from cache
+
+  Read path: GET /stego/test/{appointment} or /stego/test-latest
+        |
+        v
+  revealUserDataFromImageLike (same as profile)
+
+--------------------------------------------------------------------------------
+6.3 Pipeline B — Service metadata embed and read
+--------------------------------------------------------------------------------
+
+  [Filament service form filled]
+        |
+        v
+  "Regenerate stego PNG" -> StegoDemo.regenServiceMetadataStego($wire)
+        |
+        v
+  Pick carrier URL (gallery vs hehe), nearestNeighbor flag
+        |
+        v
+  embedServiceMetadataPngBase64
+        |-- loadUrlToImageLike(carrier)
+        |-- serviceMetadataPayloadFromForm -> JSON string
+        |-- embedJsonWithSteganoKit (loop bpc 1..3, scale candidates)
+        |     encode with password=VITE_STEGO_SECRET, scatterPayload,
+        |     randomizeBitSlots, channels r,g,b
+        v
+  imageLikeToPngBase64 -> livewire data.metadata_stego_png_base64
+        |
+        v
+  Admin saves service -> DB metadata_stego_png_base64
+
+  Read path: GET /stego/metadata/service/{service} (admin)
+        |
+        v
+  revealMetadataJsonFromSteganoPngBase64 (try bpc 1,2,3)
+        |
+        v
+  JSON printed in metadata-service.blade.php
+
+--------------------------------------------------------------------------------
+6.4 Pipeline B — Closed-date metadata
+--------------------------------------------------------------------------------
+
+  Same as 6.3 but regenClosedDateMetadataStego, closedDateMetadataPayloadFromForm,
+  carrier always hehe.png, route stego.metadata.closed-date.
+
+================================================================================
+7. CORE JAVASCRIPT MODULES (FILE-BY-FILE)
+================================================================================
+
+--------------------------------------------------------------------------------
+7.1 resources/js/stego/index.js
+--------------------------------------------------------------------------------
+
+Imports encode, decode, capacity from vendor stegano-kit.
+
+Constants:
+  STEGO_PUBLIC_HEHE_IMAGE_PATH = '/img/hehe.png'
+  MIN_CARRIER_EDGE_PX = 512, MAX_CARRIER_EDGE_PX = 4096
+  DEFAULT_ENCODE_CHANNELS = ['r','g','b']
+
+getSteganographySecret()
+  Returns import.meta.env.VITE_STEGO_SECRET or DEFAULT_DEV_KEY.
+
+encryptPayload(payload, key)
+  JSON.stringify -> CryptoJS.AES.encrypt -> OpenSSL-style string.
+
+decryptPayload(cipherText, key)
+  CryptoJS.AES.decrypt -> UTF-8 -> JSON.parse.
+
+stegCapacity(imageLike, options)
+  Delegates to stegano-kit capacity().
+
+embedCiphertext / extractCiphertext
+  Thin wrappers around encode / decode.
+
+hideUserDataInImageLike(imageLike, { name, email }, key, stegOptions)
+  Builds payload object, encryptPayload, embedCiphertext with optional stegOptions
+  (production UI passes no stegOptions -> defaults).
+
+revealUserDataFromImageLike(imageLike, key, stegOptions)
+  extractCiphertext then decryptPayload.
+
+upscaleImageLikeInteger(imageLike, factor, nearestNeighbor)
+  Canvas scale; imageSmoothingEnabled = !nearestNeighbor for pixel art.
+
+loadUrlToImageLike(url)
+  Image decode with crossOrigin anonymous -> getImageData.
+
+integerScaleCandidates(width, height)
+  Powers of two scale from ceil(512/minEdge) while max dimension <= 4096.
+
+embedJsonWithSteganoKit(imageLike, jsonString, password, nearestNeighbor)
+  Nested loops: bitsPerChannel 1,2,3; for each, scale candidates; clone or
+  upscale carrier; encode with scatter + password. RangeError retries; other
+  errors throw. First success returned.
+
+serviceMetadataPayloadFromForm / closedDateMetadataPayloadFromForm
+  See section 2.3 and 2.4.
+
+embedServiceMetadataPngBase64 / embedClosedDateMetadataPngBase64
+  load carrier, build JSON, embedJsonWithSteganoKit, imageLikeToPngBase64.
+
+revealMetadataJsonFromSteganoPngBase64(pngBase64)
+  pngBase64ToImageLike; for bpc 1..3 try decode with secret and scatter flags;
+  JSON.parse first success.
+
+createCoverImageLike({ width, height })
+  Random RGB per pixel, alpha 255.
+
+imageLikeToPngBase64 / pngBase64ToImageLike
+  Canvas PNG data URL round-trip for DB storage.
+
+--------------------------------------------------------------------------------
+7.2 resources/js/vendor/stegano-kit/index.js
+--------------------------------------------------------------------------------
+
+Fork of stegano-kit with optional scattered payload embedding.
+
+Header: 32-bit MAGIC (1398031687) + 32-bit payload byte length, written linearly
+in LSB stream.
+
+maxPayloadBytes = floor((W*H*channels*bpc - 64) / 8).
+
+When password set on encode:
+  PBKDF2-SHA256 100000 iterations -> AES-256-GCM encrypt plaintext bytes;
+  stored blob salt(16) + iv(12) + ciphertext.
+
+scatterPayload + randomizeBitSlots (metadata path):
+  deriveScatterSeed32 from SHA-256(password|WxH|channels|bpc|payloadScatterV1)
+  Fisher-Yates permutation via xorshift32; payload bits written to permuted LSB
+  slots after header region.
+
+encode(imageData, message, options)
+  textToBytes(message); optional encrypt; capacity check; buildBitStream; write
+  header linear; write payload linear or scattered.
+
+decode(imageData, options)
+  Read magic and length; read payload bits (inverse scatter); optional decrypt;
+  return UTF-8 string.
+
+capacity(imageData, options) — max payload bytes estimate.
+detect(imageData) — scans linear LSB for magic at bpc=1.
+
+--------------------------------------------------------------------------------
+7.3 resources/js/app.js
+--------------------------------------------------------------------------------
+
+Imports stego helpers; defines normalizeDayString for Filament dates.
+
+regenServiceMetadataStego(livewire)
+  Reads #service-metadata-stego-ui datasets; chooses gallery vs hehe; calls
+  embedServiceMetadataPngBase64; sets data.metadata_stego_png_base64.
+
+regenClosedDateMetadataStego(livewire)
+  Always hehe carrier; embedClosedDateMetadataPngBase64; sets metadata field.
+
+window.StegoDemo exports:
+  createCoverImageLike, hideUserDataInImageLike, revealUserDataFromImageLike,
+  imageLikeToPngBase64, pngBase64ToImageLike, stegCapacity,
+  regenServiceMetadataStego, regenClosedDateMetadataStego,
+  revealMetadataJsonFromSteganoPngBase64
+
+Also contains unrelated IntersectionObserver for [data-animate] elements.
+
+================================================================================
+8. UI, ROUTES, AND SERVER-SIDE TOUCHPOINTS
+================================================================================
+
+Blade / Livewire (embed triggers):
+  resources/views/livewire/profile/update-profile-information-form.blade.php
+  resources/views/livewire/booking-panel.blade.php
+  resources/views/livewire/pages/auth/register.blade.php (hidden field only)
+  resources/views/filament/forms/service-metadata-stego.blade.php
+  resources/views/filament/forms/closed-date-metadata-stego.blade.php
+
+Blade (decode demos):
+  resources/views/stego/user.blade.php
+  resources/views/stego/test.blade.php
+  resources/views/stego/metadata-service.blade.php
+  resources/views/stego/metadata-closed-date.blade.php
+
+Filament schemas / tables:
+  app/Filament/Resources/Services/Schemas/ServiceForm.php
+  app/Filament/Resources/ClosedDates/Schemas/ClosedDateForm.php
+  app/Filament/Resources/Services/Tables/ServicesTable.php (icon if stego set)
+  app/Filament/Resources/ClosedDates/Tables/ClosedDatesTable.php
+
+PHP controllers / Livewire:
+  app/Livewire/BookingPanel.php — requires stego_png_base64 before SMS step
+  app/Http/Controllers/CheckoutController.php — cache and persist customer stego
+  resources/views/livewire/pages/auth/register-verify-otp.blade.php — creates user
+
+routes/web.php (auth unless noted):
+  GET  /stego/test/{appointment}        — owner decodes booking name
+  GET  /stego/test-latest               — redirect to latest appointment
+  GET  /stego/user                      — decode own profile name stego
+  GET  /stego/metadata/service/{service} — admin decode service metadata
+  GET  /stego/metadata/closed-date/{closedDate} — admin decode closed date
+
+================================================================================
+9. bitsPerChannel (1, 2, 3) — METADATA PIPELINE ONLY
+================================================================================
+
+bitsPerChannel = how many least significant bits per R/G/B byte hold data.
+
+  bpc=1: 3 bits per pixel (one per channel); least visual change.
+  bpc=2: 6 bits per pixel.
+  bpc=3: 9 bits per pixel; more capacity, more distortion.
+
+Embed (embedJsonWithSteganoKit): tries bpc 1, then 2, then 3 for each scale;
+first successful encode wins. PNG does not record which bpc was used.
+
+Decode (revealMetadataJsonFromSteganoPngBase64): tries bpc 1, 2, 3 until decode
+and JSON.parse succeed.
+
+Pipeline A does not loop bpc; stegano-kit defaults to bpc=1.
+
+Capacity formula:
+  maxPayloadBytes = floor((width * height * channelCount * bpc - 64) / 8)
+
+================================================================================
+10. ENCRYPTION LAYER COMPARISON
+================================================================================
+
+  Pipeline A (names):
+    Layer 1: CryptoJS AES on JSON string (key DEFAULT_DEV_KEY unless overridden).
+    Layer 2: stegano-kit encode without password option -> LSB holds CryptoJS
+             ciphertext string bytes; no stegano-kit AES-GCM; linear LSB.
+
+  Pipeline B (metadata):
+    Layer 1: stegano-kit encode with password -> AES-256-GCM on UTF-8 JSON inside
+             kit before LSB; scatterPayload requires password for seed.
+
+================================================================================
+11. NODE TEST SCRIPTS
+================================================================================
+
+  scripts/test-stego.mjs
+    Pipeline A round-trip: encryptPayload, hideUserDataInImageLike with
+    { name, email }, revealUserDataFromImageLike, stegCapacity check.
+
+  scripts/verify-random-stego.mjs
+    Direct stegano-kit encode/decode with scatterPayload and randomizeBitSlots
+    for bpc 1..3; password from VITE_STEGO_SECRET or dev key.
+
+================================================================================
+12. OPERATIONAL NOTES
+================================================================================
+
+  - Embed and extract for metadata require the same VITE_STEGO_SECRET at build
+    time (Vite injects import.meta.env.VITE_STEGO_SECRET).
+
+  - PNG is stored as raw base64 without the data: URL prefix in DB; views add
+    prefix when rendering <img src>.
+
+  - Filament metadata stego is manual: admin must click Regenerate then save;
+    form fields alone do not auto-refresh stego PNG.
+
+  - Registration stores name_stego_png_base64 from session only if the hidden
+    field was populated before submit; register form does not call StegoDemo.
+
+  - Booking blocks submit if stego_png_base64 empty after client embed step.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

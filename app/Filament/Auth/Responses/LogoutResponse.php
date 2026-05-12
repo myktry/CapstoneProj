@@ -8,7 +8,7 @@ use Livewire\Features\SupportRedirects\Redirector;
 
 class LogoutResponse implements LogoutResponseContract
 {
-    public function toResponse($request): RedirectResponse | Redirector
+    public function toResponse($request): RedirectResponse|Redirector
     {
         return redirect()->route('login');
     }

@@ -20,7 +20,7 @@ class ActivityLogsTable
                         'created' => 'success',
                         'updated' => 'warning',
                         'deleted' => 'danger',
-                        default   => 'gray',
+                        default => 'gray',
                     })
                     ->sortable(),
                 TextColumn::make('description')
@@ -33,7 +33,10 @@ class ActivityLogsTable
                 TextColumn::make('changes')
                     ->label('Changed Fields')
                     ->formatStateUsing(function ($state): string {
-                        if (empty($state)) return '—';
+                        if (empty($state)) {
+                            return '—';
+                        }
+
                         return implode(', ', array_keys($state));
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
