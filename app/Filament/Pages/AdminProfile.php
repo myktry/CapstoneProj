@@ -2,9 +2,9 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Pages\Page;
+use Filament\Auth\Pages\EditProfile;
 
-class AdminProfile extends Page
+class AdminProfile extends EditProfile
 {
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-user-circle';
 
@@ -24,7 +24,7 @@ class AdminProfile extends Page
         return 'Manage your account settings and preferences';
     }
 
-    public static function getLabel(): ?string
+    public static function getLabel(): string
     {
         return 'My Profile';
     }
