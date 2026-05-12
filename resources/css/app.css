@@ -8,6 +8,67 @@ html {
 	scroll-behavior: smooth;
 }
 
+body.is-livewire-navigating {
+	cursor: progress;
+}
+
+[data-livewire-navigation-loader] {
+	opacity: 0;
+	transition: opacity 180ms ease;
+}
+
+body.is-livewire-navigating [data-livewire-navigation-loader] {
+	opacity: 1;
+}
+
+.livewire-loading-shell {
+	position: relative;
+}
+
+.livewire-loading-overlay {
+	background: linear-gradient(180deg, rgba(9, 9, 11, 0.82), rgba(9, 9, 11, 0.94));
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+}
+
+.livewire-loading-spinner {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1rem;
+	height: 1rem;
+	border-radius: 9999px;
+	border: 2px solid rgba(251, 191, 36, 0.25);
+	border-top-color: #fbbf24;
+	animation: livewire-spin 0.8s linear infinite;
+}
+
+.livewire-loading-bar {
+	background: linear-gradient(90deg, transparent 0%, #fbbf24 45%, #f59e0b 50%, #fbbf24 55%, transparent 100%);
+	animation: livewire-bar 1.15s ease-in-out infinite;
+	background-size: 200% 100%;
+}
+
+@keyframes livewire-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes livewire-bar {
+	0% {
+		transform: translateX(-65%);
+	}
+
+	50% {
+		transform: translateX(0%);
+	}
+
+	100% {
+		transform: translateX(65%);
+	}
+}
+
 [x-cloak] {
 	display: none !important;
 }

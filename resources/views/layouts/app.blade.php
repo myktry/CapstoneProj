@@ -18,6 +18,12 @@
         @vite(['resources/css/app.css'])
     </head>
     <body class="font-sans antialiased bg-zinc-950 text-zinc-100">
+        <div data-livewire-navigation-loader class="pointer-events-none fixed inset-x-0 top-0 z-[60]">
+            <div class="h-1 overflow-hidden">
+                <div class="livewire-loading-bar h-full w-1/2"></div>
+            </div>
+        </div>
+
         <div class="min-h-screen bg-zinc-950">
             <livewire:layout.navigation />
 

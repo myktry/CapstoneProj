@@ -8,6 +8,18 @@ import {
 	stegCapacity,
 } from './stego/index.js';
 
+if (!window.__livewireLoadingEnhancementsBound) {
+	window.__livewireLoadingEnhancementsBound = true;
+
+	const setLivewireNavigating = (isNavigating) => {
+		document.body.classList.toggle('is-livewire-navigating', isNavigating);
+	};
+
+	document.addEventListener('livewire:navigating', () => setLivewireNavigating(true));
+	document.addEventListener('livewire:navigated', () => setLivewireNavigating(false));
+	document.addEventListener('livewire:init', () => setLivewireNavigating(false));
+}
+
 const animatedElements = document.querySelectorAll('[data-animate]');
 
 if (animatedElements.length) {
