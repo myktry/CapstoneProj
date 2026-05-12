@@ -46,8 +46,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::TOPBAR_END,
-                fn (): HtmlString => new HtmlString(sprintf(
-                    '<a href="%s" class="fi-btn fi-btn-size-sm fi-btn-color-gray inline-flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition hover:bg-zinc-800 hover:text-white">\n                        <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="9" r="3" /><path d="M5.5 19a8.5 8.5 0 0 1 13 0" /></svg>\n                        <span>My Profile</span>\n                    </a>',
+                fn (): HtmlString => new HtmlString(sprintf(<<<'HTML'
+                    <a href="%s" class="fi-btn fi-btn-size-sm fi-btn-color-gray inline-flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition hover:bg-zinc-800 hover:text-white">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5 shrink-0 fill-none stroke-current stroke-2">
+                            <circle cx="12" cy="12" r="9" />
+                            <circle cx="12" cy="9" r="3" />
+                            <path d="M5.5 19a8.5 8.5 0 0 1 13 0" />
+                        </svg>
+                        <span class="whitespace-nowrap">My Profile</span>
+                    </a>
+                HTML,
                     e(\Filament\Facades\Filament::getProfileUrl() ?? '/admin/admin-profile')
                 )),
             )
