@@ -9,18 +9,15 @@ use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\Contracts\HasBeforeChallengeHook;
 use Filament\Auth\MultiFactor\Contracts\MultiFactorAuthenticationProvider;
 use Filament\Forms\Components\OneTimeCodeInput;
-use Filament\Forms\Components\RadioGroup;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
-use Filament\Schemas\Components\Component;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 class AdminEmailOtpAuthentication implements HasBeforeChallengeHook, MultiFactorAuthenticationProvider
 {
     public function __construct(
         protected OtpService $otpService,
-    ) {
-    }
+    ) {}
 
     public static function make(): static
     {

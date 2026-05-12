@@ -7,7 +7,7 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class AdminLogin extends Login
 {
-    public function getSubheading(): string | Htmlable | null
+    public function getSubheading(): string|Htmlable|null
     {
         return filled($this->userUndertakingMultiFactorAuthentication)
             ? parent::getSubheading()

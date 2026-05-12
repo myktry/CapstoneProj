@@ -73,6 +73,7 @@ class ClosedDatesManagementWidget extends Widget
         if ($closedDate) {
             $this->selectedStatus = $closedDate->type;
             $this->note = $closedDate->note;
+
             return;
         }
 
@@ -84,7 +85,7 @@ class ClosedDatesManagementWidget extends Widget
     {
         $this->initializeCalendarState();
 
-        if (!$this->selectedDate) {
+        if (! $this->selectedDate) {
             return;
         }
 
