@@ -15,6 +15,8 @@ class SecurityAuditLogResource extends Resource
 {
     protected static ?string $model = SecurityAuditLog::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldExclamation;
 
     protected static ?string $navigationLabel = 'Security Audit Logs';
