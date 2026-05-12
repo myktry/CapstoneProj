@@ -19,6 +19,9 @@
     if ($itemsBeforeThemeSwitcher->has('profile')) {
         $itemsBeforeThemeSwitcher = $itemsBeforeThemeSwitcher->prepend($itemsBeforeThemeSwitcher->pull('profile'), 'profile');
     }
+
+    $displayName = trim((string) ($user?->name ?? 'Admin')) ?: 'Admin';
+    $displayInitial = strtoupper(substr($displayName, 0, 1));
 @endphp
 
 {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::USER_MENU_BEFORE) }}
@@ -35,11 +38,20 @@
         <button
             aria-label="{{ __('filament-panels::layout.actions.open_user_menu.label') }}"
             type="button"
-            class="fi-user-menu-trigger inline-flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition hover:bg-zinc-800 hover:text-white"
+            class="fi-user-menu-trigger fi-user-menu-trigger-enhanced inline-flex items-center gap-3 rounded-xl border border-white/10 bg-zinc-900/95 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition"
         >
-            <x-filament::icon icon="heroicon-o-user-circle" class="h-5 w-5 shrink-0 text-amber-300" />
-            <span class="whitespace-nowrap">{{ __('My Profile') }}</span>
-            <x-filament::icon icon="heroicon-m-chevron-down" class="h-4 w-4 shrink-0 opacity-70" />
+            <span class="fi-user-menu-trigger-avatar" aria-hidden="true">
+                {{ $displayInitial }}
+            </span>
+
+            <span class="fi-user-menu-trigger-text">
+                <span class="fi-user-menu-trigger-title">My Profile</span>
+                <span class="fi-user-menu-trigger-subtitle">{{ $displayName }}</span>
+            </span>
+
+            <span class="fi-user-menu-trigger-chevron" aria-hidden="true">
+                <x-filament::icon icon="heroicon-m-chevron-down" class="h-4 w-4 shrink-0" />
+            </span>
         </button>
     </x-slot>
 

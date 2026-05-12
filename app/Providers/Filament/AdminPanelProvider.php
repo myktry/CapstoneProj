@@ -50,12 +50,87 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): HtmlString => new HtmlString(<<<'HTML'
                     <style>
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-enhanced {
+                            backdrop-filter: blur(8px);
+                            background-image: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(24, 24, 27, 0.92) 42%);
+                            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-enhanced:hover {
+                            border-color: rgba(251, 191, 36, 0.38);
+                            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+                            transform: translateY(-1px);
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-enhanced:focus-visible {
+                            outline: 2px solid rgba(251, 191, 36, 0.65);
+                            outline-offset: 2px;
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-avatar {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 1.9rem;
+                            height: 1.9rem;
+                            border-radius: 999px;
+                            font-weight: 800;
+                            font-size: 0.78rem;
+                            color: #111827;
+                            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+                            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+                            flex-shrink: 0;
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-text {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: flex-start;
+                            line-height: 1.1;
+                            min-width: 0;
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-title {
+                            color: #ffffff;
+                            font-size: 0.84rem;
+                            font-weight: 700;
+                            white-space: nowrap;
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-subtitle {
+                            color: rgba(255, 255, 255, 0.66);
+                            font-size: 0.72rem;
+                            max-width: 9rem;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-user-menu-trigger-chevron {
+                            color: rgba(255, 255, 255, 0.68);
+                            transition: transform 160ms ease;
+                            flex-shrink: 0;
+                        }
+
+                        .fi-topbar .fi-user-menu .fi-dropdown[aria-expanded='true'] .fi-user-menu-trigger-chevron {
+                            transform: rotate(180deg);
+                        }
+
                         .fi-topbar .fi-user-menu .fi-dropdown-panel {
                             max-width: min(20rem, calc(100vw - 1rem));
                             margin-inline-end: 0.25rem;
                         }
 
                         @media (max-width: 640px) {
+                            .fi-topbar .fi-user-menu .fi-user-menu-trigger-text {
+                                display: none;
+                            }
+
+                            .fi-topbar .fi-user-menu .fi-user-menu-trigger-enhanced {
+                                gap: 0.5rem;
+                                padding-inline: 0.65rem;
+                            }
+
                             .fi-topbar .fi-user-menu .fi-dropdown-panel {
                                 margin-inline-end: 0;
                                 max-width: calc(100vw - 0.75rem);
