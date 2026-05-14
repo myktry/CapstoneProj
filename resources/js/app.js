@@ -12,6 +12,18 @@ import {
 	revealMetadataJsonFromSteganoPngBase64,
 } from './stego/index.js';
 
+if (!window.__livewireLoadingEnhancementsBound) {
+	window.__livewireLoadingEnhancementsBound = true;
+
+	const setLivewireNavigating = (isNavigating) => {
+		document.body.classList.toggle('is-livewire-navigating', isNavigating);
+	};
+
+	document.addEventListener('livewire:navigating', () => setLivewireNavigating(true));
+	document.addEventListener('livewire:navigated', () => setLivewireNavigating(false));
+	document.addEventListener('livewire:init', () => setLivewireNavigating(false));
+}
+
 function normalizeDayString(value) {
 	if (value == null || value === '') return '';
 	if (typeof value === 'string') return value.includes('T') ? value.split('T')[0] : value;

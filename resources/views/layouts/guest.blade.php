@@ -18,6 +18,12 @@
         @vite(['resources/css/app.css'])
     </head>
     <body class="font-sans antialiased bg-zinc-950 text-zinc-100">
+        <div data-livewire-navigation-loader class="pointer-events-none fixed inset-x-0 top-0 z-[60]">
+            <div class="h-1 overflow-hidden">
+                <div class="livewire-loading-bar h-full w-1/2"></div>
+            </div>
+        </div>
+
         <div class="relative min-h-screen overflow-hidden">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_45%)]"></div>
 

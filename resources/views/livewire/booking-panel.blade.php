@@ -1,4 +1,16 @@
 <div>
+    <div wire:loading.delay class="fixed inset-0 z-[60] flex items-center justify-center px-6">
+        <div class="livewire-loading-overlay absolute inset-0 bg-zinc-950/75"></div>
+
+        <div class="relative flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-zinc-950/90 px-5 py-4 text-sm text-zinc-100 shadow-2xl shadow-black/50 backdrop-blur">
+            <span class="livewire-loading-spinner"></span>
+            <div>
+                <p class="font-semibold text-white">Updating booking panel</p>
+                <p class="text-xs text-zinc-400">Please wait while the schedule refreshes.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Fixed Overlay Backdrop -->
     <div
         wire:click="closePanel"
@@ -157,9 +169,15 @@
                                     }
                                 }"
                                 x-on:click="secureAndSubmit()"
+                                wire:loading.attr="disabled"
+                                wire:target="submitBooking"
                                 class="w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-4 font-bold text-zinc-900 transition duration-200 hover:shadow-lg hover:shadow-amber-500/30 active:scale-95"
                             >
-                                Continue to SMS Verification
+                                <span wire:loading.remove wire:target="submitBooking">Continue to SMS Verification</span>
+                                <span wire:loading.inline-flex wire:target="submitBooking" class="items-center gap-3">
+                                    <span class="livewire-loading-spinner border-zinc-900/20 border-t-zinc-900"></span>
+                                    Securing booking
+                                </span>
                             </button>
                             <p class="mt-2 text-center text-xs text-zinc-500">You will verify via SMS OTP before payment.</p>
                         @else

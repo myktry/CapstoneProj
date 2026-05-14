@@ -1,9 +1,18 @@
-<div class="w-full">
+<div class="livewire-loading-shell w-full">
+    <div wire:loading.delay wire:target="previousMonth,nextMonth,selectDate" class="livewire-loading-overlay absolute inset-0 z-20 flex items-center justify-center rounded-xl border border-amber-500/10">
+        <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-950/90 px-4 py-3 text-sm text-zinc-100 shadow-xl shadow-black/40 backdrop-blur">
+            <span class="livewire-loading-spinner"></span>
+            <span>Refreshing calendar</span>
+        </div>
+    </div>
+
     <!-- Calendar Header with Month/Year and Navigation -->
     <div class="mb-4 flex items-center justify-between">
         <button
             wire:click="previousMonth"
             wire:loading.attr="disabled"
+            wire:loading.class="opacity-60 cursor-wait"
+            wire:target="previousMonth"
             @disabled(! $this->canGoPreviousMonth())
             class="rounded-full p-2 text-amber-400 hover:bg-amber-500/20 transition-colors duration-200"
             aria-label="Previous month"
@@ -18,6 +27,8 @@
         <button
             wire:click="nextMonth"
             wire:loading.attr="disabled"
+            wire:loading.class="opacity-60 cursor-wait"
+            wire:target="nextMonth"
             @disabled(! $this->canGoNextMonth())
             class="rounded-full p-2 text-amber-400 hover:bg-amber-500/20 transition-colors duration-200"
             aria-label="Next month"
@@ -47,6 +58,8 @@
                         type="button"
                         wire:key="day-{{ $currentYear }}-{{ $currentMonth }}-{{ $day['fullDate'] !== '' ? $day['fullDate'] : 'pad-'.$loop->index }}"
                         wire:click="selectDate('{{ $day['fullDate'] }}')"
+                        wire:loading.class="opacity-60 cursor-wait"
+                        wire:target="selectDate"
                         :class="{
                             'bg-amber-500 text-zinc-900 font-bold shadow-lg shadow-amber-500/30': @json($this->selectedDate === $day['fullDate'] && ! $day['isClosed'] && ! $day['isPast']),
                             'border-amber-500/20 text-white hover:border-amber-500/50 hover:bg-zinc-800': @json($this->selectedDate !== $day['fullDate'] || $day['isClosed'] || $day['isPast']) && !@json($day['isClosed'] || $day['isPast']),
