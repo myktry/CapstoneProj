@@ -82,8 +82,9 @@ class CheckoutController extends Controller
             );
         }
 
-        // Stripe metadata values are size-limited; store the stego payload server-side.
+        // Stripe metadata values are size-limited; store stego + plaintext name server-side.
         Cache::put('booking:'.$session->id, [
+            'customer_name'             => trim((string) ($data['customer_name'] ?? '')),
             'customer_stego_png_base64' => (string) ($data['customer_stego_png_base64'] ?? ''),
         ], now()->addHours(2));
 
@@ -141,6 +142,7 @@ class CheckoutController extends Controller
                 $meta = $stripeSession->metadata;
                 $cached = Cache::pull('booking:'.$sessionId, []);
                 $stego = (string) ($cached['customer_stego_png_base64'] ?? '');
+                $customerName = trim((string) ($cached['customer_name'] ?? ''));
 
                 Appointment::create([
                     'user_id'          => $meta->user_id ?: null,
@@ -148,7 +150,7 @@ class CheckoutController extends Controller
                     'appointment_date' => $meta->appointment_date,
                     'appointment_time' => $meta->appointment_time,
                     'customer_phone'   => $meta->customer_phone,
-                    'customer_name'    => 'HIDDEN',
+                    'customer_name'    => $customerName !== '' ? $customerName : 'HIDDEN',
                     'customer_email'   => '',
                     'customer_stego_png_base64' => $stego,
                     'status'           => 'paid',

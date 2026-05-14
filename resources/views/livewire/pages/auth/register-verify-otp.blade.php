@@ -59,7 +59,7 @@ new #[Layout('layouts.guest')] class extends Component
         }
 
         $user = User::query()->create([
-            'name' => 'HIDDEN',
+            'name' => trim((string) ($pending['name'] ?? '')),
             'name_stego_png_base64' => (string) ($pending['name_stego_png_base64'] ?? ''),
             'email' => $pending['email'],
             'phone' => $pending['phone'],
