@@ -171,6 +171,7 @@ class BookingPanel extends Component
             'appointment_date' => $this->selectedDate,
             'appointment_time' => $this->selectedTime,
             'customer_phone'   => trim($this->form['phone']),
+            'customer_name'    => trim($this->form['name']),
             'customer_stego_png_base64' => trim($this->form['stego_png_base64']),
         ]);
 

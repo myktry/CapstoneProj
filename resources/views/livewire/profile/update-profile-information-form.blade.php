@@ -38,9 +38,9 @@ new class extends Component
             'name_stego_png_base64' => ['required', 'string'],
         ]);
 
-        // Store the real name only in stego; keep the plaintext column as a placeholder.
+        // Plaintext name for UI; stego PNG remains the embedded duplicate for demo / decode routes.
         $user->fill([
-            'name' => 'HIDDEN',
+            'name' => trim($validated['name']),
             'name_stego_png_base64' => $validated['name_stego_png_base64'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
