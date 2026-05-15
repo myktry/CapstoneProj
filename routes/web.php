@@ -113,7 +113,7 @@ Route::middleware('auth')->group(function () {
             return redirect('/admin');
         }
 
-        return redirect()->route('home');
+        return view('dashboard');
     })->name('dashboard');
 
     Route::get('/profile', function () {
