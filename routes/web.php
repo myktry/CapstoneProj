@@ -109,10 +109,6 @@ Route::middleware('auth')->group(function () {
         ->name('bookings.cancel');
 
     Route::get('/dashboard', function () {
-        if (auth()->user()?->isAdmin()) {
-            return redirect('/admin');
-        }
-
         return view('dashboard');
     })->name('dashboard');
 
