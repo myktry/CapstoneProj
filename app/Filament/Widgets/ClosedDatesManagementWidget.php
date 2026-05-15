@@ -22,6 +22,8 @@ class ClosedDatesManagementWidget extends Widget
 
     public ?string $note = null;
 
+    public ?int $closedDateId = null;
+
     public function mount(): void
     {
         $this->initializeCalendarState();
@@ -55,6 +57,7 @@ class ClosedDatesManagementWidget extends Widget
         $this->selectedDate = null;
         $this->selectedStatus = 'open';
         $this->note = null;
+        $this->closedDateId = null;
 
         $this->dispatch('close-modal', 'closed-dates-calendar');
     }
@@ -73,15 +76,17 @@ class ClosedDatesManagementWidget extends Widget
         if ($closedDate) {
             $this->selectedStatus = $closedDate->type;
             $this->note = $closedDate->note;
+            $this->closedDateId = $closedDate->id;
 
             return;
         }
 
         $this->selectedStatus = 'open';
         $this->note = null;
+        $this->closedDateId = null;
     }
 
-    public function saveDateStatus(): void
+    public function saveDateStatus(?string $metadataStegoPngBase64 = null): void
     {
         $this->initializeCalendarState();
 
@@ -98,6 +103,12 @@ class ClosedDatesManagementWidget extends Widget
                 ->each
                 ->delete();
         } else {
+            if (! in_array($this->selectedStatus, ['closed', 'holiday'], true)) {
+                $this->addError('selectedStatus', 'Invalid status. Choose Closed or Holiday.');
+
+                return;
+            }
+
             $now = now();
 
             ClosedDate::query()->upsert([
@@ -106,10 +117,11 @@ class ClosedDatesManagementWidget extends Widget
                     'type' => $this->selectedStatus,
                     'note' => $this->note,
                     'is_active' => true,
+                    'metadata_stego_png_base64' => $metadataStegoPngBase64 ?? '',
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],
-            ], ['date'], ['type', 'note', 'is_active', 'updated_at']);
+            ], ['date'], ['type', 'note', 'is_active', 'metadata_stego_png_base64', 'updated_at']);
         }
 
         $this->closeModal();

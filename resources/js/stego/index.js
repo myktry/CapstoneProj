@@ -40,15 +40,41 @@ export async function extractCiphertext(imageLike, options) {
   return decode(imageLike, options);
 }
 
-export async function hideUserDataInImageLike(imageLike, { name, email }, key = DEFAULT_DEV_KEY, stegOptions) {
+export async function hideUserDataInImageLike(imageLike, { name, email }, key) {
   const payload = email === undefined ? { name } : { name, email };
-  const cipherText = encryptPayload(payload, key);
-  return await embedCiphertext(imageLike, cipherText, stegOptions);
+  const password = key ?? getSteganographySecret();
+  return embedJsonWithSteganoKit(imageLike, JSON.stringify(payload), password, false);
 }
 
-export async function revealUserDataFromImageLike(imageLike, key = DEFAULT_DEV_KEY, stegOptions) {
-  const cipherText = await extractCiphertext(imageLike, stegOptions);
-  return decryptPayload(cipherText, key);
+export async function revealUserDataFromImageLike(imageLike, key, _stegOptions) {
+  const password = key ?? getSteganographySecret();
+
+  try {
+    return await decodeJsonFromSteganoImage(imageLike, password);
+  } catch {
+    // fall through to legacy Pipeline A (CryptoJS + linear LSB)
+  }
+
+  const legacyKeys = [DEFAULT_DEV_KEY];
+  if (key && !legacyKeys.includes(key)) {
+    legacyKeys.push(key);
+  }
+
+  for (const legacyKey of legacyKeys) {
+    try {
+      const cipherText = await decode(imageLike, {
+        bitsPerChannel: 1,
+        channels: DEFAULT_ENCODE_CHANNELS,
+      });
+      return decryptPayload(cipherText, legacyKey);
+    } catch {
+      // try next legacy key
+    }
+  }
+
+  throw new Error(
+    'Could not decode user steganographic data (wrong secret, legacy key mismatch, or unsupported format).',
+  );
 }
 
 /**
@@ -142,6 +168,24 @@ export async function embedJsonWithSteganoKit(imageLike, jsonString, password, n
   throw lastError ?? new RangeError('Message too large for image even after upscaling.');
 }
 
+async function decodeJsonFromSteganoImage(imageLike, password) {
+  for (const bitsPerChannel of [1, 2, 3]) {
+    try {
+      const text = await decode(imageLike, {
+        password,
+        bitsPerChannel,
+        channels: DEFAULT_ENCODE_CHANNELS,
+        scatterPayload: true,
+        randomizeBitSlots: true,
+      });
+      return JSON.parse(text);
+    } catch {
+      // try next encoding variant
+    }
+  }
+  throw new Error('Could not decode steganographic JSON (wrong secret or unsupported format).');
+}
+
 function cloneImageData(imageLike) {
   const { width, height, data } = imageLike;
   const copy = new Uint8ClampedArray(data);
@@ -193,21 +237,11 @@ export async function embedClosedDateMetadataPngBase64({ carrierAbsoluteUrl, nea
 export async function revealMetadataJsonFromSteganoPngBase64(pngBase64) {
   const secret = getSteganographySecret();
   const imageLike = await pngBase64ToImageLike(pngBase64);
-  for (const bitsPerChannel of [1, 2, 3]) {
-    try {
-      const text = await decode(imageLike, {
-        password: secret,
-        bitsPerChannel,
-        channels: DEFAULT_ENCODE_CHANNELS,
-        scatterPayload: true,
-        randomizeBitSlots: true,
-      });
-      return JSON.parse(text);
-    } catch {
-      // try next encoding variant
-    }
+  try {
+    return await decodeJsonFromSteganoImage(imageLike, secret);
+  } catch {
+    throw new Error('Could not decode steganographic metadata (wrong secret or not a stegano-kit AES payload).');
   }
-  throw new Error('Could not decode steganographic metadata (wrong secret or not a stegano-kit AES payload).');
 }
 
 export function createCoverImageLike({ width = 300, height = 300 } = {}) {
