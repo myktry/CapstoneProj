@@ -85,6 +85,21 @@ async function regenClosedDateMetadataStego(livewire) {
 	await livewire.set('data.metadata_stego_png_base64', png);
 }
 
+async function generateClosedDateMetadataPng({ closedDateId, date, type, note }) {
+	const heheUrl = new URL(STEGO_PUBLIC_HEHE_IMAGE_PATH, window.location.origin).href;
+
+	return embedClosedDateMetadataPngBase64({
+		carrierAbsoluteUrl: heheUrl,
+		nearestNeighbor: true,
+		formSnapshot: {
+			closedDateId: closedDateId ?? null,
+			date: normalizeDayString(date),
+			type: type ?? '',
+			note: note ?? '',
+		},
+	});
+}
+
 const animatedElements = document.querySelectorAll('[data-animate]');
 
 if (animatedElements.length) {
@@ -112,5 +127,6 @@ window.StegoDemo = {
 	stegCapacity,
 	regenServiceMetadataStego,
 	regenClosedDateMetadataStego,
+	generateClosedDateMetadataPng,
 	revealMetadataJsonFromSteganoPngBase64,
 };

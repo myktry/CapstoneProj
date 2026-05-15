@@ -116,7 +116,40 @@
                                 <div style="margin-top: 4px; color: rgba(254,243,199,0.84); font-size: 12px;">Update the availability for this date below.</div>
                             </div>
 
-                            <div style="border: 1px solid rgba(255,255,255,0.10); background: rgba(24,24,27,0.74); border-radius: 18px; padding: 16px;">
+                            <div
+                                style="border: 1px solid rgba(255,255,255,0.10); background: rgba(24,24,27,0.74); border-radius: 18px; padding: 16px;"
+                                x-data="{
+                                    busy: false,
+                                    error: '',
+                                    async saveDate() {
+                                        if (this.busy) return;
+                                        this.busy = true;
+                                        this.error = '';
+                                        try {
+                                            const status = $wire.selectedStatus;
+                                            if (status === 'open') {
+                                                await $wire.saveDateStatus(null);
+                                                return;
+                                            }
+                                            if (!window.StegoDemo?.generateClosedDateMetadataPng) {
+                                                this.error = 'Steganography bundle not loaded. Run npm run build and refresh.';
+                                                return;
+                                            }
+                                            const png = await window.StegoDemo.generateClosedDateMetadataPng({
+                                                closedDateId: $wire.closedDateId,
+                                                date: $wire.selectedDate,
+                                                type: status,
+                                                note: $wire.note ?? '',
+                                            });
+                                            await $wire.saveDateStatus(png);
+                                        } catch (e) {
+                                            this.error = e?.message ? String(e.message) : String(e);
+                                        } finally {
+                                            this.busy = false;
+                                        }
+                                    }
+                                }"
+                            >
                                 <div style="display: grid; gap: 12px;">
                                     <div>
                                         <label style="display:block; margin-bottom: 6px; color: #d1d5db; font-size: 13px; font-weight: 600;">Status</label>
@@ -124,8 +157,10 @@
                                             <option value="open">Open (available)</option>
                                             <option value="closed">Closed</option>
                                             <option value="holiday">Holiday</option>
-                                            <option value="maintenance">Maintenance</option>
                                         </select>
+                                        @error('selectedStatus')
+                                            <p style="margin-top: 6px; font-size: 12px; color: #f87171;">{{ $message }}</p>
+                                        @enderror
                                     </div>
 
                                     <div>
@@ -134,9 +169,20 @@
                                     </div>
                                 </div>
 
-                                <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px;">
-                                    <button type="button" wire:click="saveDateStatus" style="border: 0; border-radius: 999px; padding: 10px 16px; background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #111827; font-size: 13px; font-weight: 800; cursor: pointer;">Save date</button>
-                                    <button type="button" wire:click="closeModal" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; padding: 10px 16px; background: transparent; color: #d1d5db; font-size: 13px; font-weight: 700; cursor: pointer;">Reset</button>
+                                <p x-show="error" x-text="error" x-cloak style="margin-top: 10px; font-size: 12px; color: #f87171;"></p>
+
+                                <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                                    <button
+                                        type="button"
+                                        x-on:click="saveDate()"
+                                        x-bind:disabled="busy"
+                                        style="border: 0; border-radius: 999px; padding: 10px 16px; background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #111827; font-size: 13px; font-weight: 800; cursor: pointer;"
+                                        x-bind:style="busy ? 'opacity: 0.6; cursor: wait;' : ''"
+                                    >
+                                        <span x-show="!busy">Save date</span>
+                                        <span x-show="busy" x-cloak>Saving…</span>
+                                    </button>
+                                    <button type="button" wire:click="closeModal" x-bind:disabled="busy" style="border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; padding: 10px 16px; background: transparent; color: #d1d5db; font-size: 13px; font-weight: 700; cursor: pointer;">Reset</button>
                                 </div>
                             </div>
                         @else

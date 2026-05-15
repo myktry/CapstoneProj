@@ -157,6 +157,10 @@ class AdminPanelProvider extends PanelProvider
                 HTML),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): \Illuminate\Contracts\View\View => view('filament.vite-admin-stego'),
+            )
+            ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 function (): HtmlString {
                     try {
