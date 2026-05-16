@@ -214,3 +214,32 @@ input[type="date"]::-moz-calendar-input {
 input[type="date"]:focus {
 	outline: none;
 }
+
+/* Filament / Login UI fixes */
+/* Ensure primary action buttons show readable labels on dark amber backgrounds */
+.rounded-2xl .filament-button,
+.rounded-2xl button[type="submit"],
+.rounded-2xl .fi-button,
+.rounded-2xl .filament-button-primary {
+	color: #0b0b0b !important; /* dark text on amber background for contrast */
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Prevent oversized pill buttons from obscuring their labels */
+.rounded-2xl .filament-button[disabled],
+.rounded-2xl .filament-button {
+	min-height: 2.25rem;
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
+
+/* Improve input focus styles inside auth card */
+.rounded-2xl input:focus,
+.rounded-2xl textarea:focus,
+.rounded-2xl select:focus {
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(251,191,36,0.12);
+}
