@@ -87,9 +87,11 @@
                 <div
                     id="cancel-modal"
                     hidden
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+                    class="fixed inset-0 z-50 items-center justify-center bg-black/70 px-4"
+                    style="display: none;"
                     role="dialog"
                     aria-modal="true"
+                    aria-hidden="true"
                 >
                     <div
                         class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
@@ -150,11 +152,13 @@
         if (openCancelModalButton && closeCancelModalButton && cancelModal) {
             const hideModal = () => {
                 cancelModal.hidden = true;
+                cancelModal.style.display = 'none';
                 cancelModal.setAttribute('aria-hidden', 'true');
             };
 
             const openModal = () => {
                 cancelModal.hidden = false;
+                cancelModal.style.display = 'flex';
                 cancelModal.setAttribute('aria-hidden', 'false');
             };
 
