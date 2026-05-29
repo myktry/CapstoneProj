@@ -150,17 +150,27 @@
         if (openCancelModalButton && closeCancelModalButton && cancelModal) {
             const hideModal = () => {
                 cancelModal.hidden = true;
+                cancelModal.setAttribute('aria-hidden', 'true');
             };
 
             const openModal = () => {
                 cancelModal.hidden = false;
+                cancelModal.setAttribute('aria-hidden', 'false');
             };
 
             const closeModal = hideModal;
 
             hideModal();
 
-            openCancelModalButton.addEventListener('click', openModal);
+            document.addEventListener('DOMContentLoaded', hideModal);
+            window.addEventListener('load', hideModal);
+            window.addEventListener('pageshow', hideModal);
+            window.addEventListener('pagehide', hideModal);
+
+            openCancelModalButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                openModal();
+            });
             closeCancelModalButton.addEventListener('click', closeModal);
 
             cancelModal.addEventListener('click', (event) => {
