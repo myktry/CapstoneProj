@@ -74,7 +74,7 @@ new #[Layout('layouts.guest')] class extends Component
         session()->forget('pending_registration');
         session()->regenerate();
 
-        $this->redirect(route('dashboard', absolute: false), navigate: false);
+        $this->redirect(route('home', absolute: false), navigate: false);
     }
 
     public function resend(OtpService $otpService): void
