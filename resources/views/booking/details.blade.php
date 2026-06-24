@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-zinc-950 text-zinc-100 antialiased">
-    <main class="mx-auto w-full max-w-3xl px-6 py-12" x-data="{ cancelModalOpen: false }" x-on:keydown.escape.window="cancelModalOpen = false">
+    <main class="mx-auto w-full max-w-3xl px-6 py-12">
         <a href="{{ route('home') }}" class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300">Back to home</a>
 
         <section class="mt-6 rounded-2xl border border-white/10 bg-zinc-900/80 p-6 shadow-2xl shadow-black/40">
@@ -77,12 +77,54 @@
                     @csrf
                     <button
                         type="button"
-                        x-on:click="cancelModalOpen = true"
+                        id="open-cancel-modal"
                         class="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:bg-red-400"
                     >
                         Cancel Booking and Request Refund
                     </button>
                 </form>
+
+                <div
+                    id="cancel-modal"
+                    hidden
+                    class="fixed inset-0 z-50 items-center justify-center bg-black/70 px-4"
+                    style="display: none;"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-hidden="true"
+                >
+                    <div
+                        class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
+                    >
+                        <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Confirm Cancellation</p>
+                        <h2 class="mt-2 text-2xl font-semibold text-white">Cancel Booking?</h2>
+                        <p class="mt-3 text-sm text-zinc-300">
+                            This action will cancel your booking and submit a refund request to Stripe.
+                            A {{ $deductionPercent }}% non-refundable deduction will apply.
+                        </p>
+                        <p class="mt-3 text-xs text-zinc-400">
+                            Refund is not available once the appointment is within 10 minutes.
+                        </p>
+
+                        <div class="mt-6 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                id="close-cancel-modal"
+                                class="rounded-full border border-white/15 bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700"
+                            >
+                                Keep Booking
+                            </button>
+
+                            <button
+                                type="submit"
+                                form="cancel-booking-form"
+                                class="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
+                            >
+                                Yes, Cancel and Request Refund
+                            </button>
+                        </div>
+                    </div>
+                </div>
             @else
                 <div class="mt-6 rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
                     @if ($appointment->refund_status === 'pending')
@@ -99,48 +141,62 @@
                 </div>
             @endif
         </section>
-
-        <div
-            x-cloak
-            x-show="cancelModalOpen"
-            x-transition.opacity
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
-            role="dialog"
-            aria-modal="true"
-        >
-            <div
-                x-on:click.outside="cancelModalOpen = false"
-                class="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl"
-            >
-                <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Confirm Cancellation</p>
-                <h2 class="mt-2 text-2xl font-semibold text-white">Cancel Booking?</h2>
-                <p class="mt-3 text-sm text-zinc-300">
-                    This action will cancel your booking and submit a refund request to Stripe.
-                    A {{ $deductionPercent }}% non-refundable deduction will apply.
-                </p>
-                <p class="mt-3 text-xs text-zinc-400">
-                    Refund is not available once the appointment is within 10 minutes.
-                </p>
-
-                <div class="mt-6 flex items-center justify-end gap-3">
-                    <button
-                        type="button"
-                        x-on:click="cancelModalOpen = false"
-                        class="rounded-full border border-white/15 bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700"
-                    >
-                        Keep Booking
-                    </button>
-
-                    <button
-                        type="submit"
-                        form="cancel-booking-form"
-                        class="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
-                    >
-                        Yes, Cancel and Request Refund
-                    </button>
-                </div>
-            </div>
-        </div>
     </main>
+
+    <script>
+        const openCancelModalButton = document.getElementById('open-cancel-modal');
+        const closeCancelModalButton = document.getElementById('close-cancel-modal');
+        const cancelModal = document.getElementById('cancel-modal');
+        const cancelForm = document.getElementById('cancel-booking-form');
+
+        if (openCancelModalButton && closeCancelModalButton && cancelModal) {
+            const hideModal = () => {
+                cancelModal.hidden = true;
+                cancelModal.style.display = 'none';
+                cancelModal.setAttribute('aria-hidden', 'true');
+            };
+
+            const openModal = () => {
+                cancelModal.hidden = false;
+                cancelModal.style.display = 'flex';
+                cancelModal.setAttribute('aria-hidden', 'false');
+            };
+
+            const closeModal = hideModal;
+
+            hideModal();
+
+            document.addEventListener('DOMContentLoaded', hideModal);
+            window.addEventListener('load', hideModal);
+            window.addEventListener('pageshow', hideModal);
+            window.addEventListener('pagehide', hideModal);
+
+            openCancelModalButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                openModal();
+            });
+            closeCancelModalButton.addEventListener('click', closeModal);
+
+            cancelModal.addEventListener('click', (event) => {
+                if (event.target === cancelModal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !cancelModal.hidden) {
+                    closeModal();
+                }
+            });
+
+            window.addEventListener('pageshow', hideModal);
+
+            if (cancelForm) {
+                cancelForm.addEventListener('submit', () => {
+                    closeModal();
+                });
+            }
+        }
+    </script>
 </body>
 </html>

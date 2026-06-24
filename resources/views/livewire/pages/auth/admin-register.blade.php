@@ -1,0 +1,202 @@
+<?php
+
+use App\Models\User;
+use App\Services\OtpService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rules;
+use Livewire\Attributes\Layout;
+use Livewire\Volt\Component;
+
+new #[Layout('layouts.guest')] class extends Component
+{
+    public string $name = '';
+    public string $email = '';
+    public string $phone = '';
+    public string $password = '';
+    public string $password_confirmation = '';
+    public string $otpChannel = 'email';
+
+    public function mount(): void
+    {
+        // Check if an admin already exists
+        abort_if(User::query()->where('role', 'admin')->exists(), 403, 'An admin account already exists.');
+    }
+
+    public function registerAdmin(OtpService $otpService): void
+    {
+        // Double-check that no admin exists
+        abort_if(User::query()->where('role', 'admin')->exists(), 403, 'An admin account already exists.');
+
+        $validated = $this->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'phone' => ['required', 'string', 'max:20'],
+            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'otpChannel' => ['required', 'in:email,sms'],
+        ]);
+
+        $pendingAdmin = [
+            'name' => trim($validated['name']),
+            'email' => strtolower(trim($validated['email'])),
+            'phone' => trim($validated['phone']),
+            'password' => Hash::make($validated['password']),
+            'role' => 'admin',
+            'otp_channel' => $validated['otpChannel'],
+        ];
+
+        session()->put('pending_admin_registration', $pendingAdmin);
+
+        $recipient = $validated['otpChannel'] === 'sms'
+            ? $pendingAdmin['phone']
+            : $pendingAdmin['email'];
+
+        try {
+            $otpService->issueCode(
+                purpose: 'admin_register',
+                channel: $validated['otpChannel'],
+                recipient: $recipient,
+                context: ['stage' => 'admin-registration', 'method' => $validated['otpChannel']],
+            );
+        } catch (ValidationException $exception) {
+            session()->flash('status', 'verification-code-sent');
+            $this->redirect(route('admin.register.verify-otp', absolute: false), navigate: false);
+
+            return;
+        } catch (\Throwable $throwable) {
+            report($throwable);
+            session()->forget('pending_admin_registration');
+
+            $this->addError('email', 'Unable to send the verification code right now. Please try again.');
+
+            return;
+        }
+
+        session()->flash('status', 'verification-code-sent');
+
+        $this->redirect(route('admin.register.verify-otp', absolute: false), navigate: false);
+    }
+}; ?>
+
+<div>
+    <div class="mb-6">
+        <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Create Admin</p>
+        <h1 class="mt-2 text-3xl font-semibold text-white">Admin Registration</h1>
+        <p class="mt-2 text-sm text-zinc-400">Create the administrator account for Black Ember.</p>
+        <p class="mt-2 text-sm text-amber-200">After you submit your details, we will send a 6-digit OTP by email or SMS to complete registration.</p>
+        <p class="mt-2 text-sm text-amber-200">Only one admin account can exist in the system. Once created, this form will no longer be accessible.</p>
+    </div>
+
+    <form wire:submit.prevent="registerAdmin" class="space-y-4">
+        <!-- Name -->
+        <div>
+            <x-input-label for="name" :value="__('Full Name')" class="text-zinc-300" />
+            <x-text-input
+                wire:model="name"
+                id="name"
+                class="block mt-1 w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                type="text"
+                name="name"
+                required
+                autofocus
+                autocomplete="name"
+                placeholder="Enter your full name"
+            />
+            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        </div>
+
+        <!-- Email Address -->
+        <div class="mt-4">
+            <x-input-label for="email" :value="__('Email Address')" class="text-zinc-300" />
+            <x-text-input
+                wire:model="email"
+                id="email"
+                class="block mt-1 w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                type="email"
+                name="email"
+                required
+                autocomplete="username"
+                placeholder="admin@example.com"
+            />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <!-- Phone Number -->
+        <div class="mt-4">
+            <x-input-label for="phone" :value="__('Phone Number')" class="text-zinc-300" />
+            <x-text-input
+                wire:model="phone"
+                id="phone"
+                class="block mt-1 w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                type="text"
+                name="phone"
+                required
+                autocomplete="tel"
+                placeholder="+63 900 000 0000"
+            />
+            <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+        </div>
+
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" class="text-zinc-300" />
+            <x-text-input
+                wire:model="password"
+                id="password"
+                class="block mt-1 w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                type="password"
+                name="password"
+                required
+                autocomplete="new-password"
+                placeholder="Enter a strong password"
+            />
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="mt-4">
+            <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="text-zinc-300" />
+            <x-text-input
+                wire:model="password_confirmation"
+                id="password_confirmation"
+                class="block mt-1 w-full border-white/10 bg-zinc-950 text-white placeholder-zinc-500 focus:border-amber-400 focus:ring-amber-400"
+                type="password"
+                name="password_confirmation"
+                required
+                autocomplete="new-password"
+                placeholder="Re-enter your password"
+            />
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <div class="mt-6 p-4 rounded-lg border border-amber-500/20 bg-amber-500/10">
+            <x-input-label :value="__('How would you like to verify the admin account?')" class="text-amber-200 font-semibold mb-3 block" />
+            <div class="space-y-3">
+                <label class="flex items-center cursor-pointer group">
+                    <input wire:model="otpChannel" type="radio" value="email" class="rounded border-white/20 bg-zinc-900 text-amber-400 shadow-sm focus:ring-amber-400" />
+                    <span class="ms-3 text-sm text-zinc-300 group-hover:text-amber-300">
+                        <span class="font-semibold">Email</span> - Get a code sent to the email address
+                    </span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input wire:model="otpChannel" type="radio" value="sms" class="rounded border-white/20 bg-zinc-900 text-amber-400 shadow-sm focus:ring-amber-400" />
+                    <span class="ms-3 text-sm text-zinc-300 group-hover:text-amber-300">
+                        <span class="font-semibold">SMS</span> - Get a code sent to the phone number
+                    </span>
+                </label>
+            </div>
+            <x-input-error :messages="$errors->get('otpChannel')" class="mt-3" />
+        </div>
+
+        <div class="pt-4 flex items-center justify-between gap-3">
+            <a class="text-sm text-zinc-400 underline underline-offset-2 hover:text-amber-300 focus:outline-none" href="{{ route('filament.admin.auth.login') }}" wire:navigate>
+                {{ __('Back to Admin Login') }}
+            </a>
+
+            <x-primary-button class="!rounded-full !bg-amber-400 !px-6 !py-2 !text-zinc-900 !normal-case !tracking-wide hover:!bg-amber-300 focus:!bg-amber-300 focus:!ring-amber-300">
+                {{ __('Create Admin Account') }}
+            </x-primary-button>
+        </div>
+    </form>
+</div>

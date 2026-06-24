@@ -3,16 +3,14 @@
 namespace App\Mail;
 
 use App\Models\Appointment;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RefundProcessedMail extends Mailable implements ShouldQueue
+class RefundProcessedMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     public function __construct(
         public readonly Appointment $appointment,

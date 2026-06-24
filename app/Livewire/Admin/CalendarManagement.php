@@ -77,25 +77,18 @@ class CalendarManagement extends Component
                 ->each
                 ->delete();
         } else {
-            $existingRecord = ClosedDate::query()
-                ->whereDate('date', $normalizedDate)
-                ->first();
+            $now = now();
 
-            if ($existingRecord) {
-                $existingRecord->update([
+            ClosedDate::query()->upsert([
+                [
                     'date' => $normalizedDate,
                     'type' => $this->selectedStatus,
                     'note' => $this->note,
                     'is_active' => true,
-                ]);
-            } else {
-                ClosedDate::query()->create([
-                    'date' => $normalizedDate,
-                    'type' => $this->selectedStatus,
-                    'note' => $this->note,
-                    'is_active' => true,
-                ]);
-            }
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ], ['date'], ['type', 'note', 'is_active', 'updated_at']);
         }
 
         $this->dispatch('refresh');

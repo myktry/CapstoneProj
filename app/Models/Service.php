@@ -14,6 +14,7 @@ class Service extends Model
         'price',
         'description',
         'image',
+        'metadata_stego_png_base64',
         'duration_minutes',
         'is_active',
         'sort_order',
@@ -32,6 +33,29 @@ class Service extends Model
     public function galleryItem(): BelongsTo
     {
         return $this->belongsTo(GalleryItem::class);
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! filled($this->image)) {
+            return null;
+        }
+
+        if (str_starts_with($this->image, 'http')) {
+            return $this->image;
+        }
+
+        return url('storage/'.ltrim($this->image, '/'));
+    }
+
+    /** Preferred carrier URL when embedding metadata (gallery image if `image` empty). */
+    public function carrierImagePublicUrl(): ?string
+    {
+        if ($this->image_url) {
+            return $this->image_url;
+        }
+
+        return $this->galleryItem?->image_url;
     }
 
     public function scopeActive(Builder $query): Builder

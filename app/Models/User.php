@@ -56,6 +56,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Appointment::class);
     }
 
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->notifications()->where('is_read', false);
+    }
+
     public function isAdmin(): bool
     {
         return strtolower(trim((string) $this->role)) === 'admin';

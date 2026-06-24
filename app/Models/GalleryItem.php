@@ -46,6 +46,19 @@ class GalleryItem extends Model
             ->orderBy('created_at');
     }
 
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! filled($this->image)) {
+            return null;
+        }
+
+        if (str_starts_with($this->image, 'http')) {
+            return $this->image;
+        }
+
+        return url('storage/' . ltrim($this->image, '/'));
+    }
+
     public function service(): HasOne
     {
         return $this->hasOne(Service::class);

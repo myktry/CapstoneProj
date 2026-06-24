@@ -2,16 +2,15 @@
 
 namespace App\Mail;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OtpCodeMail extends Mailable implements ShouldQueue
+class OtpCodeMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $code,
@@ -20,12 +19,13 @@ class OtpCodeMail extends Mailable implements ShouldQueue
     ) {
     }
 
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Your Black Ember verification code',
-        );
-    }
+   public function envelope(): Envelope
+{
+    return new Envelope(
+            from: new Address(config('mail.from.address'), config('mail.from.name', 'Black Ember')),
+            subject: 'Your account verification code',
+    );
+}
 
     public function content(): Content
     {

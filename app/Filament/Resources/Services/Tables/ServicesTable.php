@@ -30,6 +30,10 @@ class ServicesTable
                 IconColumn::make('is_active')
                     ->boolean()
                     ->label('Active'),
+                IconColumn::make('metadata_stego_png_base64')
+                    ->boolean()
+                    ->label('Stego meta')
+                    ->getStateUsing(fn ($record): bool => filled($record->metadata_stego_png_base64)),
             ])
             ->filters([
                 TernaryFilter::make('is_active')

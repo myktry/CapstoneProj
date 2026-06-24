@@ -11,10 +11,19 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- Livewire Styles -->
+        @livewireStyles
+
+        <!-- CSS -->
+        @vite(['resources/css/app.css'])
     </head>
     <body class="font-sans antialiased bg-zinc-950 text-zinc-100">
+        <div data-livewire-navigation-loader class="pointer-events-none fixed inset-x-0 top-0 z-[60]">
+            <div class="h-1 overflow-hidden">
+                <div class="livewire-loading-bar h-full w-1/2"></div>
+            </div>
+        </div>
+
         <div class="min-h-screen bg-zinc-950">
             <livewire:layout.navigation />
 
@@ -32,5 +41,9 @@
                 {{ $slot }}
             </main>
         </div>
+        @livewireScripts
+
+        <!-- Scripts -->
+        @vite(['resources/js/app.js'])
     </body>
 </html>

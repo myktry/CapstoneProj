@@ -2,14 +2,16 @@
 
 namespace App\Jobs;
 
+use App\Mail\OtpCodeMail;
 use App\Services\Sms\SmsSender;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Process\Process;
+use Throwable;
 
 class DeliverOtpCode implements ShouldQueue
 {
@@ -29,57 +31,57 @@ class DeliverOtpCode implements ShouldQueue
         $message = "Your Black Ember verification code is {$this->code}. It expires in {$this->expiresInMinutes} minutes.";
 
         if ($this->channel === 'email') {
-            $script = base_path('scripts/otp/send-email.mjs');
+            try {
+                Mail::to($this->recipient)->send(
+                    new OtpCodeMail(
+                        code: $this->code,
+                        purpose: $this->purpose,
+                        expiresInMinutes: $this->expiresInMinutes,
+                    )
+                );
 
-            if (! is_file($script)) {
-                throw new \RuntimeException('OTP email sender script is missing: scripts/otp/send-email.mjs');
-            }
-
-            $process = new Process(
-                [
-                    'node',
-                    $script,
-                    '--to',
-                    $this->recipient,
-                    '--code',
-                    $this->code,
-                    '--purpose',
-                    $this->purpose,
-                    '--expires',
-                    (string) $this->expiresInMinutes,
-                ],
-                base_path(),
-                [
-                    // Laravel loads .env into PHP, but child processes won't see it unless we pass it through.
-                    'EMAIL_USER' => (string) env('EMAIL_USER', ''),
-                    'EMAIL_PASS' => (string) env('EMAIL_PASS', ''),
-                ] + ($_ENV ?? [])
-            );
-            $process->setTimeout(20);
-            $process->run();
-
-            if (! $process->isSuccessful()) {
-                Log::error('Failed to send OTP email via nodemailer.', [
+                Log::info('OTP email delivered successfully', [
+                    'purpose' => $this->purpose,
                     'recipient' => $this->recipient,
-                    'stdout' => trim($process->getOutput()),
-                    'stderr' => trim($process->getErrorOutput()),
+                ]);
+            } catch (Throwable $exception) {
+                Log::error('Failed to deliver OTP email', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                    'error' => $exception->getMessage(),
                 ]);
 
-                throw new \RuntimeException('Failed to send OTP email via nodemailer.');
+                throw $exception;
             }
 
             return;
         }
 
         if ($this->channel === 'sms') {
-            $smsSender->send($this->recipient, $message);
+            try {
+                $smsSender->send($this->recipient, $message);
+
+                Log::info('OTP SMS delivered successfully', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                ]);
+            } catch (Throwable $exception) {
+                Log::error('Failed to deliver OTP SMS', [
+                    'purpose' => $this->purpose,
+                    'recipient' => $this->recipient,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                throw $exception;
+            }
 
             return;
         }
 
-        Log::warning('Unsupported OTP channel encountered in queued delivery.', [
+        Log::warning('Unsupported OTP channel encountered in queued delivery', [
             'channel' => $this->channel,
             'recipient' => $this->recipient,
+            'purpose' => $this->purpose,
         ]);
     }
 }

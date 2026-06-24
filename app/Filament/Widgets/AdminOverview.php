@@ -8,6 +8,7 @@ use App\Models\GalleryItem;
 use App\Models\Service;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Throwable;
 
 class AdminOverview extends StatsOverviewWidget
 {
@@ -21,19 +22,38 @@ class AdminOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        return [
-            Stat::make('Appointments', Appointment::query()->count())
-                ->description('Total bookings recorded')
-                ->color('primary'),
-            Stat::make('Active Services', Service::query()->where('is_active', true)->count())
-                ->description('Visible in booking and website')
-                ->color('success'),
-            Stat::make('Gallery Items', GalleryItem::query()->where('is_active', true)->count())
-                ->description('Visible in public gallery')
-                ->color('warning'),
-            Stat::make('Closed/Holiday Dates', ClosedDate::query()->where('is_active', true)->count())
-                ->description('Blocked dates in booking calendar')
-                ->color('danger'),
-        ];
+        try {
+            return [
+                Stat::make('Appointments', Appointment::query()->count())
+                    ->description('Total bookings recorded')
+                    ->color('primary'),
+                Stat::make('Active Services', Service::query()->where('is_active', true)->count())
+                    ->description('Visible in booking and website')
+                    ->color('success'),
+                Stat::make('Gallery Items', GalleryItem::query()->where('is_active', true)->count())
+                    ->description('Visible in public gallery')
+                    ->color('warning'),
+                Stat::make('Closed/Holiday Dates', ClosedDate::query()->where('is_active', true)->count())
+                    ->description('Blocked dates in booking calendar')
+                    ->color('danger'),
+            ];
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            return [
+                Stat::make('Appointments', 0)
+                    ->description('Unavailable')
+                    ->color('gray'),
+                Stat::make('Active Services', 0)
+                    ->description('Unavailable')
+                    ->color('gray'),
+                Stat::make('Gallery Items', 0)
+                    ->description('Unavailable')
+                    ->color('gray'),
+                Stat::make('Closed/Holiday Dates', 0)
+                    ->description('Unavailable')
+                    ->color('gray'),
+            ];
+        }
     }
 }

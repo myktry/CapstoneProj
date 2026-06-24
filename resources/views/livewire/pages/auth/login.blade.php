@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Forms\LoginForm;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -17,12 +18,17 @@ new #[Layout('layouts.guest')] class extends Component
 
         $user = $this->form->validateCredentials();
 
+        if ($user->isAdmin()) {
+            $this->addError('form.email', 'Admin accounts must sign in at /admin/login.');
+
+            return;
+        }
+
+        // Set pending MFA session to trigger challenge before actual login
         session()->put('pending_login_mfa', [
-            'user_id' => (int) $user->id,
+            'user_id' => $user->id,
             'remember' => (bool) $this->form->remember,
         ]);
-
-        session()->flash('status', 'mfa-required');
 
         $this->redirect(route('login.mfa-challenge', absolute: false), navigate: false);
     }

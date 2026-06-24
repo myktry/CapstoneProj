@@ -12,6 +12,7 @@ class ClosedDate extends Model
         'type',
         'note',
         'is_active',
+        'metadata_stego_png_base64',
     ];
 
     protected function casts(): array

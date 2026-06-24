@@ -9,6 +9,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Widgets\Widget;
+use Throwable;
 
 class ContactInformationWidget extends Widget implements HasForms
 {
@@ -28,7 +29,15 @@ class ContactInformationWidget extends Widget implements HasForms
 
     public function mount(): void
     {
-        $contact = ContactSetting::query()->first();
+        try {
+            $contact = ContactSetting::query()->first();
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            $this->form->fill($this->defaultContactData());
+
+            return;
+        }
 
         if (! $contact) {
             $this->form->fill($this->defaultContactData());
@@ -80,14 +89,47 @@ class ContactInformationWidget extends Widget implements HasForms
 
     public function save(): void
     {
-        $data = $this->form->getState();
+        try {
+            $data = $this->form->getState();
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            Notification::make()
+                ->title('Unable to load contact information')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         $contact = ContactSetting::query()->orderBy('id')->first();
 
         if (! $contact) {
-            ContactSetting::query()->create($data);
+            try {
+                ContactSetting::query()->create($data);
+            } catch (Throwable $throwable) {
+                report($throwable);
+
+                Notification::make()
+                    ->title('Unable to save contact information')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
         } else {
-            $contact->update($data);
+            try {
+                $contact->update($data);
+            } catch (Throwable $throwable) {
+                report($throwable);
+
+                Notification::make()
+                    ->title('Unable to save contact information')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
         }
 
         Notification::make()

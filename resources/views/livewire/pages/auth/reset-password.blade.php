@@ -14,6 +14,7 @@ new #[Layout('layouts.guest')] class extends Component
 {
     #[Locked]
     public string $token = '';
+    #[Locked]
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
@@ -25,7 +26,7 @@ new #[Layout('layouts.guest')] class extends Component
     {
         $this->token = $token;
 
-        $this->email = request()->string('email');
+        $this->email = (string) request()->query('email', '');
     }
 
     /**
@@ -65,16 +66,16 @@ new #[Layout('layouts.guest')] class extends Component
 
         Session::flash('status', __($status));
 
-        $this->redirectRoute('login', navigate: true);
+        $this->redirectRoute('login');
     }
 }; ?>
 
 <div>
-    <form wire:submit="resetPassword">
+    <form wire:submit.prevent="resetPassword">
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
+            <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" disabled />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
@@ -96,7 +97,11 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="mt-4 flex items-center justify-between gap-3">
+            <a href="{{ route('login') }}" class="text-sm font-medium text-zinc-400 underline underline-offset-2 transition hover:text-amber-300">
+                {{ __('Back to login') }}
+            </a>
+
             <x-primary-button>
                 {{ __('Reset Password') }}
             </x-primary-button>

@@ -6,6 +6,7 @@ use App\Models\ContactSetting;
 use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema as DatabaseSchema;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 
@@ -17,7 +18,6 @@ class BookingPanel extends Component
     public ?string $selectedTime = null;
     public array $form = [
         'name' => '',
-        'email' => '',
         'phone' => '',
         'stego_png_base64' => '',
     ];
@@ -39,7 +39,6 @@ class BookingPanel extends Component
         }
 
         return !empty(trim($this->form['name'])) 
-            && !empty(trim($this->form['email'])) 
             && !empty(trim($this->form['phone']));
     }
 
@@ -64,7 +63,19 @@ class BookingPanel extends Component
     #[Computed]
     public function timeSlots(): array
     {
-        $contact = ContactSetting::query()->first(['booking_start_time', 'booking_end_time', 'booking_interval_minutes']);
+        $contact = null;
+
+        if (
+            DatabaseSchema::hasColumn('contact_settings', 'booking_start_time')
+            && DatabaseSchema::hasColumn('contact_settings', 'booking_end_time')
+            && DatabaseSchema::hasColumn('contact_settings', 'booking_interval_minutes')
+        ) {
+            $contact = ContactSetting::query()->first([
+                'booking_start_time',
+                'booking_end_time',
+                'booking_interval_minutes',
+            ]);
+        }
 
         $startTime = $contact?->booking_start_time ?: '10:00:00';
         $endTime = $contact?->booking_end_time ?: '17:00:00';
@@ -92,7 +103,6 @@ class BookingPanel extends Component
     {
         return [
             'name' => trim($this->form['name']),
-            'email' => trim($this->form['email']),
             'phone' => trim($this->form['phone']),
             'stego_png_base64' => trim($this->form['stego_png_base64']),
         ];
@@ -145,7 +155,7 @@ class BookingPanel extends Component
             return;
         }
 
-        if (!$this->form['name'] || !$this->form['email'] || !$this->form['phone']) {
+        if (!$this->form['name'] || !$this->form['phone']) {
             $this->dispatch('notify', message: 'Please fill in all required fields.');
             return;
         }
@@ -161,6 +171,7 @@ class BookingPanel extends Component
             'appointment_date' => $this->selectedDate,
             'appointment_time' => $this->selectedTime,
             'customer_phone'   => trim($this->form['phone']),
+            'customer_name'    => trim($this->form['name']),
             'customer_stego_png_base64' => trim($this->form['stego_png_base64']),
         ]);
 
@@ -174,7 +185,6 @@ class BookingPanel extends Component
         $this->selectedTime = null;
         $this->form = [
             'name' => '',
-            'email' => '',
             'phone' => '',
         ];
 
@@ -190,7 +200,6 @@ class BookingPanel extends Component
         $user = auth()->user();
 
         $this->form['name'] = $user->name ?? '';
-        $this->form['email'] = $user->email ?? '';
         $this->form['phone'] = $user->phone ?? '';
     }
 

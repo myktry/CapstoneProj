@@ -81,7 +81,7 @@ class AppointmentsTable
                     }),
                 TextColumn::make('amount_paid')
                     ->label('Amount')
-                    ->formatStateUsing(fn ($state): string => '₱' . number_format($state / 100, 2))
+                    ->formatStateUsing(fn ($state): string => '₱'.number_format($state / 100, 2))
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Booked At')
@@ -93,8 +93,8 @@ class AppointmentsTable
                 SelectFilter::make('status')
                     ->options([
                         'completed' => 'Completed',
-                        'paid'      => 'Paid',
-                        'pending'   => 'Pending',
+                        'paid' => 'Paid',
+                        'pending' => 'Pending',
                         'cancelled' => 'Cancelled',
                     ]),
             ])

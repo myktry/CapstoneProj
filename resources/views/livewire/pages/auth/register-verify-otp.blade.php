@@ -35,10 +35,13 @@ new #[Layout('layouts.guest')] class extends Component
             'otp' => ['required', 'digits:6'],
         ]);
 
+        $channel = $pending['otp_channel'] ?? 'email';
+        $recipient = $channel === 'sms' ? $pending['phone'] : $pending['email'];
+
         $isValid = $otpService->verifyCode(
             purpose: 'register',
-            channel: 'email',
-            recipient: $pending['email'],
+            channel: $channel,
+            recipient: $recipient,
             code: $this->otp,
         );
 
@@ -56,7 +59,7 @@ new #[Layout('layouts.guest')] class extends Component
         }
 
         $user = User::query()->create([
-            'name' => 'HIDDEN',
+            'name' => trim((string) ($pending['name'] ?? '')),
             'name_stego_png_base64' => (string) ($pending['name_stego_png_base64'] ?? ''),
             'email' => $pending['email'],
             'phone' => $pending['phone'],
@@ -71,7 +74,7 @@ new #[Layout('layouts.guest')] class extends Component
         session()->forget('pending_registration');
         session()->regenerate();
 
-        $this->redirect(route('dashboard', absolute: false), navigate: false);
+        $this->redirect(route('home', absolute: false), navigate: false);
     }
 
     public function resend(OtpService $otpService): void
@@ -84,14 +87,38 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
-        $otpService->issueCode(
-            purpose: 'register',
-            channel: 'email',
-            recipient: $pending['email'],
-            context: ['stage' => 'registration-resend'],
-        );
+        $this->sendVerificationCode($otpService, ['stage' => 'registration-resend']);
+    }
 
-        session()->flash('status', 'verification-code-sent');
+    private function sendVerificationCode(OtpService $otpService, array $context = ['stage' => 'registration']): void
+    {
+        $pending = session('pending_registration');
+
+        if (! is_array($pending) || empty($pending['email'])) {
+            return;
+        }
+
+        $channel = $pending['otp_channel'] ?? 'email';
+        $recipient = $channel === 'sms' ? $pending['phone'] : $pending['email'];
+
+        try {
+            $otpService->issueCode(
+                purpose: 'register',
+                channel: $channel,
+                recipient: $recipient,
+                context: $context,
+            );
+
+            session()->flash('status', 'verification-code-sent');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            if ($exception->errors() !== [] && array_key_exists('otp', $exception->errors())) {
+                $this->addError('otp', $exception->errors()['otp'][0]);
+
+                return;
+            }
+
+            throw $exception;
+        }
     }
 }; ?>
 
@@ -99,7 +126,10 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="mb-6">
         <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Verify Email</p>
         <h1 class="mt-2 text-3xl font-semibold text-white">Enter OTP Code</h1>
-        <p class="mt-2 text-sm text-zinc-400">We sent a 6-digit code to your email to finish account creation.</p>
+        <p class="mt-2 text-sm text-zinc-400">We sent a 6-digit OTP to your email address to finish account creation.</p>
+        @if (is_array(session('pending_registration')) && ! empty(session('pending_registration')['email'] ?? null))
+            <p class="mt-2 text-sm text-amber-200">Check the inbox for <span class="font-medium">{{ session('pending_registration')['email'] }}</span>.</p>
+        @endif
     </div>
 
     @if (session('status') === 'verification-code-sent')
